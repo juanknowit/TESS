@@ -11,8 +11,11 @@ VOLUME="${3:-TESS}"
 
 if ! python3 -c "import dmgbuild" 2>/dev/null; then
   echo "▸ Installing dmgbuild…"
-  python3 -m pip install --quiet --user "dmgbuild==1.6.7" 2>/dev/null \
-    || python3 -m pip install --quiet --user --break-system-packages "dmgbuild==1.6.7"
+  # pip picks the newest release that supports this Python (the Command Line Tools ship 3.9).
+  PIP=(python3 -m pip install --quiet --user "dmgbuild>=1.6.2,<1.7")
+  if ! "${PIP[@]}"; then
+    "${PIP[@]}" --break-system-packages   # Homebrew/externally managed Pythons
+  fi
 fi
 
 TMP="$(mktemp -d)"

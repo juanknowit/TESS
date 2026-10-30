@@ -65,9 +65,9 @@ img.paste(glow,(0,0),glow); img.paste(glow,(0,0),glow); img.paste(a,(0,0),a)
 
 # Name pills: dark, so Finder (which judges the brightness right under each name) draws both names in white.
 p_=layer(); pd=ImageDraw.Draw(p_)
-# Centres measured from Finder on macOS 27 (13-point names under 112-point icons): Finder draws
-# "Applications" about 4.5 points higher than "TESS". Widths = text width + 16 points each side.
-for (cx_,cy_),wd in [((169.0,279.0),62),((469.5,274.5),107)]:
+# Centres measured from Finder on macOS 27: 13-point names sit 74 points below the icon centre
+# (and half a point left). Widths = text width + 16 points each side.
+for (cx_,cy_),wd in [((169.0,279.0),62),((469.0,279.0),106)]:
     pd.rounded_rectangle([(cx_-wd/2)*S,(cy_-11)*S,(cx_+wd/2)*S,(cy_+11)*S],radius=11*S,
                          fill=(7,14,27,235),outline=(70,215,255,70),width=S)
 img.paste(p_,(0,0),p_)
