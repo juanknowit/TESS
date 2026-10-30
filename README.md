@@ -61,7 +61,7 @@ cd TESS
 ./build.sh --install     # builds, copies to /Applications and launches
 ```
 
-`./build.sh` alone just builds `build.noindex/TESS.app`. `scripts/make-dmg.sh build.noindex/TESS.app dist/TESS.dmg` packs it into an installer. Releases are built by GitHub Actions; see [RELEASING.md](RELEASING.md).
+`./build.sh` alone just builds `build.noindex/TESS.app`. To test changes next to the TESS you use every day, build **TESS Dev** instead (`./build.sh --dev --install`): a separate app with its own settings, data and permissions, woken with “Hey Dev”. See [CONTRIBUTING.md](CONTRIBUTING.md#tess-dev). `scripts/make-dmg.sh build.noindex/TESS.app dist/TESS.dmg` packs it into an installer. Releases are built by GitHub Actions; see [RELEASING.md](RELEASING.md).
 
 ## First run
 

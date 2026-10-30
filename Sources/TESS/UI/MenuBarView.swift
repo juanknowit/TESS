@@ -23,7 +23,7 @@ struct MenuBarView: View {
                 OrbView(phase: assistant.phase, level: meter.level)
                     .frame(width: 46, height: 46)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("TESS").font(.headline)
+                    Text(AppFlavor.current.appName).font(.headline)
                     Text(assistant.statusLine)
                         .font(.caption)
                         .foregroundStyle(.secondary)

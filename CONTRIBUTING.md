@@ -5,9 +5,26 @@ Thanks for helping make TESS better! Bug reports, ideas and pull requests are al
 ## Building
 
 ```bash
-./build.sh            # build build.noindex/TESS.app
-./build.sh --install  # build, install to /Applications and launch
+./build.sh --dev --install  # build and launch "TESS Dev" for testing (recommended)
+./build.sh --dev            # just build build.noindex/TESS Dev.app
+./build.sh --install        # build and install the release flavour as TESS.app
 ```
+
+### TESS Dev
+
+`--dev` builds **TESS Dev**, a separate app you can run next to the TESS you download from GitHub:
+
+| | TESS | TESS Dev |
+|---|---|---|
+| App | `/Applications/TESS.app` | `/Applications/TESS Dev.app` |
+| Bundle ID (settings, permissions) | `app.tess.assistant` | `app.tess.assistant.dev` |
+| Data folder | `~/Library/Application Support/TESS` | `~/Library/Application Support/TESS Dev` |
+| Keychain item | `app.tess.assistant` | `app.tess.assistant.dev` |
+| Wake word | "Hey Tess" | "Hey Dev" |
+| Morning briefing on unlock | on | off |
+| Updates | from GitHub | rebuild it |
+
+TESS Dev starts with empty settings and data and needs its own API keys and permissions once. It's signed with your local "TESS Local Signing" certificate, so its permissions survive rebuilds. `build.sh --dev --install` only ever quits, resets or replaces TESS Dev. The names live in `AppFlavor.swift`; the release values there must never change.
 
 Only the Xcode Command Line Tools are required. Every pull request is also built on GitHub Actions.
 

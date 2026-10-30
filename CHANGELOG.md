@@ -4,6 +4,10 @@ All notable changes to TESS are listed here. The format follows [Keep a Changelo
 
 ## [Unreleased]
 
+### Development
+- `build.sh --dev` builds **TESS Dev**, a separate app for local testing with its own bundle ID, settings, data folder, keychain item, permissions and icon. It wakes to "Hey Dev", starts with the morning briefing off, never checks for updates, and its install step only ever touches TESS Dev
+- CI checks the identity of both the release app and TESS Dev on every pull request
+
 ## [0.9.3-beta] — 2026-10-31
 
 ### Changed

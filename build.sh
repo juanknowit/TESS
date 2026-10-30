@@ -1,7 +1,10 @@
 #!/bin/bash
 # Builds TESS.app from source. Needs macOS 14+ and Xcode or the Command Line Tools (xcode-select --install).
-#   ./build.sh            build into ./build.noindex/TESS.app
-#   ./build.sh --install  build, copy to /Applications and launch
+#   ./build.sh                  build into ./build.noindex/TESS.app
+#   ./build.sh --install        build, copy to /Applications and launch
+#   ./build.sh --dev [--install]  build "TESS Dev" instead: a separate app (app.tess.assistant.dev) with its
+#                               own settings, data, keychain item and permissions. Use it for local testing
+#                               next to the TESS you download from GitHub; it never touches that TESS.
 #
 # Optional environment:
 #   TESS_VERSION     version to stamp into the app, e.g. 0.9.0 or 0.9.0-beta (default: Info.plist)
@@ -12,6 +15,26 @@
 #   REQUIRE_SIGNING=1  fail instead of falling back to ad-hoc signing (used for releases)
 set -euo pipefail
 cd "$(dirname "$0")"
+
+INSTALL=0
+DEV=0
+for arg in "$@"; do
+  case "$arg" in
+    --install) INSTALL=1 ;;
+    --dev) DEV=1 ;;
+    *) echo "Unknown option: $arg" >&2; exit 2 ;;
+  esac
+done
+
+# Everything that identifies the app. Release values are what TESS has always used; never change them.
+if [ "$DEV" = 1 ]; then
+  APP_NAME="TESS Dev"; EXEC_NAME="TESS Dev"; BUNDLE_ID="app.tess.assistant.dev"
+  ICON="AppIconDev"; SUPPORT_FOLDER="TESS Dev"
+else
+  APP_NAME="TESS"; EXEC_NAME="TESS"; BUNDLE_ID="app.tess.assistant"
+  ICON="AppIcon"; SUPPORT_FOLDER="TESS"
+fi
+echo "▸ Building $APP_NAME ($BUNDLE_ID)"
 
 if [ -n "${UNIVERSAL:-}" ]; then
   # Release builds run on both Apple silicon and Intel Macs.
@@ -29,15 +52,31 @@ else
 fi
 
 # ".noindex" keeps Spotlight and Launchpad from listing this build copy next to the installed app.
-APP="build.noindex/TESS.app"
+APP="build.noindex/$APP_NAME.app"
 rm -rf build "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
-cp "$BIN" "$APP/Contents/MacOS/TESS"
+cp "$BIN" "$APP/Contents/MacOS/$EXEC_NAME"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
-cp Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
+cp "Resources/$ICON.icns" "$APP/Contents/Resources/$ICON.icns"
+
+PLIST="$APP/Contents/Info.plist"
+if [ "$DEV" = 1 ]; then
+  plutil -replace CFBundleIdentifier -string "$BUNDLE_ID" "$PLIST"
+  plutil -replace CFBundleName -string "$APP_NAME" "$PLIST"
+  plutil -replace CFBundleDisplayName -string "$APP_NAME" "$PLIST"
+  plutil -replace CFBundleExecutable -string "$EXEC_NAME" "$PLIST"
+  plutil -replace CFBundleIconFile -string "$ICON" "$PLIST"
+  COMMIT="$(git rev-parse --short HEAD 2>/dev/null || true)"
+  [ -n "$COMMIT" ] && [ -n "$(git status --porcelain 2>/dev/null)" ] && COMMIT="$COMMIT+changes"
+  plutil -replace TESSCommit -string "${COMMIT:-unknown}" "$PLIST"
+fi
+# Never install something whose identity doesn't match what this script is about to replace.
+if [ "$(plutil -extract CFBundleIdentifier raw "$PLIST")" != "$BUNDLE_ID" ]; then
+  echo "✗ Built app has bundle ID $(plutil -extract CFBundleIdentifier raw "$PLIST"), expected $BUNDLE_ID" >&2
+  exit 1
+fi
 
 # ── Version ────────────────────────────────────────────────────────────────────
-PLIST="$APP/Contents/Info.plist"
 if [ -n "${TESS_VERSION:-}" ]; then
   # CFBundleShortVersionString must be numeric (0.9.0); the full name (0.9.0 beta) is shown in About.
   plutil -replace CFBundleShortVersionString -string "${TESS_VERSION%%-*}" "$PLIST"
@@ -125,22 +164,26 @@ codesign --verify --strict "$APP"
 
 echo "✓ Built $APP"
 
-if [ "${1:-}" = "--install" ]; then
-  pkill -x TESS 2>/dev/null || true
+if [ "$INSTALL" = 1 ]; then
+  TARGET="/Applications/$APP_NAME.app"
+  # Only ever touch this flavour: quit, reset and replace "$APP_NAME" ($BUNDLE_ID), nothing else.
+  pkill -x "$EXEC_NAME" 2>/dev/null || true
 
-  # The first time TESS is installed with a new signing identity, clear the permissions macOS recorded
-  # for the old one. Otherwise System Settings shows TESS switched on while the new build is still refused.
-  MARKER="$HOME/Library/Application Support/TESS/signing-identity"
+  # The first time this app is installed with a new signing identity, clear the permissions macOS recorded
+  # for the old one. Otherwise System Settings shows it switched on while the new build is still refused.
+  MARKER="$HOME/Library/Application Support/$SUPPORT_FOLDER/signing-identity"
   if [ "$SIGNED_AS" != "ad-hoc" ] && [ "$(cat "$MARKER" 2>/dev/null)" != "$SIGNED_AS" ]; then
-    echo "▸ New signing identity — resetting TESS's old macOS permissions so you can grant them once more"
-    tccutil reset All app.tess.assistant >/dev/null 2>&1 || true
+    echo "▸ New signing identity — resetting $APP_NAME's old macOS permissions so you can grant them once more"
+    tccutil reset All "$BUNDLE_ID" >/dev/null 2>&1 || true
     mkdir -p "$(dirname "$MARKER")"
     printf '%s' "$SIGNED_AS" > "$MARKER"
+  else
+    echo "▸ Same signing identity as last time — $APP_NAME keeps its permissions"
   fi
 
-  rm -rf /Applications/TESS.app
+  rm -rf "$TARGET"
   cp -R "$APP" /Applications/
   rm -rf build.noindex
-  echo "✓ Installed to /Applications/TESS.app (build copy removed)"
-  open /Applications/TESS.app
+  echo "✓ Installed to $TARGET (build copy removed)"
+  open "$TARGET"
 fi

@@ -118,7 +118,7 @@ final class AppSettings: ObservableObject {
         ollamaModel = str("ollamaModel", "llama3.1")
 
         userName = str("userName", "")
-        wakeName = str("wakeName", "Tess")
+        wakeName = str("wakeName", AppFlavor.current.defaultWakeName)
         recognitionLocale = str("recognitionLocale", "en-US")
         homeCity = str("homeCity", "")
         let usesImperial = Locale.current.measurementSystem == .us
@@ -131,7 +131,7 @@ final class AppSettings: ObservableObject {
         greetOnLaunch = flag("greetOnLaunch", true)
         playChimes = flag("playChimes", true)
         memoryEnabled = flag("memoryEnabled", true)
-        briefingOnUnlock = flag("briefingOnUnlock", true)
+        briefingOnUnlock = flag("briefingOnUnlock", AppFlavor.current.briefingOnUnlockByDefault)
 
         voiceEngine = VoiceEngine(rawValue: str("voiceEngine", "")) ?? .system
         systemVoiceID = str("systemVoiceID", "")
@@ -199,7 +199,8 @@ final class AppSettings: ObservableObject {
         df.locale = Locale(identifier: "en_US")
         df.dateFormat = "EEEE d MMMM yyyy, HH:mm"
         let who = displayName.isEmpty ? "the user" : displayName
-        let assistantName = wakeName.trimmed.isEmpty ? "TESS" : wakeName.trimmed.uppercased()
+        let assistantName = AppFlavor.current.isDev ? "TESS Dev"
+            : (wakeName.trimmed.isEmpty ? "TESS" : wakeName.trimmed.uppercased())
 
         var prompt = """
         You are \(assistantName), a voice assistant living on \(who)'s Mac. Your manner: calm, quick, quietly witty and unfailingly competent, \

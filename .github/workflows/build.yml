@@ -66,6 +66,12 @@ jobs:
       - name: Build and package (unsigned)
         run: scripts/ci-package.sh
 
+      - name: Check release and Dev identities
+        run: |
+          scripts/ci-check-identity.sh release build.noindex/TESS.app
+          UNIVERSAL= ./build.sh --dev
+          scripts/ci-check-identity.sh dev "build.noindex/TESS Dev.app"
+
       - uses: actions/upload-artifact@v5
         with:
           name: TESS-${{ env.TESS_VERSION }}
@@ -114,6 +120,9 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
         run: scripts/ci-package.sh
+
+      - name: Check release identity
+        run: scripts/ci-check-identity.sh release build.noindex/TESS.app
 
       - name: Release notes
         run: |
