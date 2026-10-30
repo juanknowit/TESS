@@ -12,6 +12,8 @@ final class Agent {
     /// Increases every time the user says something. Lets tools tell whether the user has replied
     /// since an earlier step (used to require confirmation before sending messages).
     static var currentTurn = 0
+    /// What the user said most recently. Sending a message or email requires it to be a clear yes.
+    static var lastUserText = ""
 
     private func stripImages() {
         history = history.map { item in
@@ -37,6 +39,7 @@ final class Agent {
              onToolUse: (String) -> Void) async throws -> String {
         repair()
         Agent.currentTurn += 1
+        Agent.lastUserText = userText
         history.append(.user(userText))
         trim()
         // Images are only useful for the turn they were captured in; drop them afterwards to save tokens.
@@ -72,17 +75,23 @@ final class Agent {
         return lastText.isEmpty ? "Sorry, that took more steps than I can manage in one go." : lastText
     }
 
-    /// Drops the oldest turns, always leaving history starting at a user message.
-    private func trim() {
+    private func trim() { history = Self.trimmed(history, maxItems: maxItems) }
+    private func repair() { history = Self.repaired(history) }
+
+    /// Drops the oldest items, always leaving history starting at a user message.
+    static func trimmed(_ history: [ChatItem], maxItems: Int) -> [ChatItem] {
+        var history = history
         while history.count > maxItems { history.removeFirst() }
         while let first = history.first {
             if case .user = first { break }
             history.removeFirst()
         }
+        return history
     }
 
-    /// If a previous run was interrupted between a tool call and its result, cut the dangling turn.
-    private func repair() {
+    /// If a previous run was interrupted between a tool call and its result, cuts the dangling turn
+    /// (providers reject a tool call without a matching result).
+    static func repaired(_ history: [ChatItem]) -> [ChatItem] {
         var i = 0
         while i < history.count {
             if case .assistant(_, let calls, _) = history[i], !calls.isEmpty {
@@ -94,13 +103,13 @@ final class Agent {
                     j += 1
                 }
                 if found != expected {
-                    history.removeSubrange(i..<history.count)
-                    return
+                    return Array(history[..<i])
                 }
                 i = j
             } else {
                 i += 1
             }
         }
+        return history
     }
 }

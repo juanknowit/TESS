@@ -29,6 +29,11 @@ struct AnthropicProvider: LLMProvider {
                                                headers: ["x-api-key": apiKey, "anthropic-version": "2023-06-01"],
                                                body: body)
 
+        return Self.parse(response)
+    }
+
+    /// Turns a Messages API response into an `LLMReply`.
+    static func parse(_ response: JSONObject) -> LLMReply {
         let content = response["content"] as? [JSONObject] ?? []
         var text = ""
         var calls: [ToolCall] = []

@@ -108,24 +108,24 @@ enum MailTools {
             toAddress = sender
         }
         let subject = args.string("subject") ?? ""
-        let draft = await EmailDrafts.shared.add(.init(id: "", toName: toName, toAddress: toAddress,
-                                                       subject: subject, body: body, replyToID: replyID, turn: 0))
+        let id = await EmailDrafts.box.add(.init(toName: toName, toAddress: toAddress,
+                                                 subject: subject, body: body, replyToID: replyID))
         let what = replyID == nil ? "Email to \(toName) <\(toAddress)>, subject “\(subject)”" : "Reply to \(toName)"
         return """
-        Draft \(draft.id) ready (not sent). \(what).
+        Draft \(id) ready (not sent). \(what).
         Body: “\(body)”
-        Now tell the user who it's to and summarise it in a sentence, then ask if you should send it. Only after they say yes in their next reply, call send_email with draft_id \(draft.id).
+        Now tell the user who it's to and summarise it in a sentence, then ask if you should send it. Call send_email with draft_id \(id) only if their very next reply is a clear yes; TESS checks this and refuses otherwise. If they want changes, make a new draft.
         """
     }
 
     static let sendEmail = Tool(
         name: "send_email",
-        description: "Send an email prepared with draft_email. Only call this after the user has explicitly confirmed the draft in a reply.",
+        description: "Send an email prepared with draft_email. Only call this when the user's reply right after the read-back is a clear yes. TESS checks their words and refuses otherwise.",
         properties: ["draft_id": P.string("The id returned by draft_email")],
         required: ["draft_id"]
     ) { args in
         guard let id = args.string("draft_id") else { throw TESSError("Which draft?") }
-        let draft = try await EmailDrafts.shared.takeConfirmed(id)
+        let draft = try await EmailDrafts.box.take(id)
         let body = draft.body.appleScriptEscaped
         let script: String
         if let replyID = draft.replyToID {
@@ -171,39 +171,16 @@ enum MailTools {
     }
 }
 
-/// Emails waiting for the user's go-ahead — sendable only after the user has spoken again.
+/// Emails waiting for the user's go-ahead. See `ConfirmationGate` for the rules.
 @MainActor
-final class EmailDrafts {
-    static let shared = EmailDrafts()
-
+enum EmailDrafts {
     struct Draft {
-        var id: String
         let toName: String
         let toAddress: String
         let subject: String
         let body: String
         let replyToID: String?
-        var turn: Int
     }
 
-    private var drafts: [String: Draft] = [:]
-    private var counter = 0
-
-    func add(_ draft: Draft) -> Draft {
-        counter += 1
-        var stored = draft
-        stored.id = "e\(counter)"
-        stored.turn = Agent.currentTurn
-        drafts[stored.id] = stored
-        return stored
-    }
-
-    func takeConfirmed(_ id: String) throws -> Draft {
-        guard let draft = drafts[id] else { throw TESSError("There's no email draft \(id). Make one with draft_email first.") }
-        guard Agent.currentTurn > draft.turn else {
-            throw TESSError("Not sent: the user hasn't confirmed yet. Read the draft back and wait for their answer.")
-        }
-        drafts[id] = nil
-        return draft
-    }
+    static let box = DraftBox<Draft>(prefix: "e", noun: "email draft")
 }

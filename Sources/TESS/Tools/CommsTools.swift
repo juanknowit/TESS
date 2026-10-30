@@ -22,21 +22,21 @@ enum CommsTools {
             throw TESSError("I need a recipient and a message.")
         }
         let recipient = try await ContactResolver.resolve(to)
-        let draft = await MessageDrafts.shared.add(handle: recipient.handle, name: recipient.name, text: text)
+        let id = await MessageDrafts.box.add(.init(handle: recipient.handle, name: recipient.name, text: text))
         return """
-        Draft \(draft.id) ready (not sent). To: \(recipient.name) (\(recipient.handle)). Message: “\(text)”.
-        Now read the recipient and message back and ask the user to confirm. Only after they say yes in their next reply, call send_message with draft_id \(draft.id).
+        Draft \(id) ready (not sent). To: \(recipient.name) (\(recipient.handle)). Message: “\(text)”.
+        Now read the recipient and message back and ask the user whether to send it. Call send_message with draft_id \(id) only if their very next reply is a clear yes; TESS checks this and refuses otherwise. If they want changes, make a new draft.
         """
     }
 
     static let sendMessage = Tool(
         name: "send_message",
-        description: "Send a message prepared with draft_message. Only call this after the user has explicitly confirmed the draft in a reply.",
+        description: "Send a message prepared with draft_message. Only call this when the user's reply right after the read-back is a clear yes. TESS checks their words and refuses otherwise.",
         properties: ["draft_id": P.string("The id returned by draft_message")],
         required: ["draft_id"]
     ) { args in
         guard let id = args.string("draft_id") else { throw TESSError("Which draft?") }
-        let draft = try await MessageDrafts.shared.takeConfirmed(id)
+        let draft = try await MessageDrafts.box.take(id)
         let service = try await Shell.appleScript(sendScript(handle: draft.handle, text: draft.text))
         return "Sent to \(draft.name) via \(service.isEmpty ? "Messages" : service)."
     }
@@ -160,36 +160,14 @@ enum CommsTools {
 // MARK: - Drafts that need the user's go-ahead
 
 @MainActor
-final class MessageDrafts {
-    static let shared = MessageDrafts()
-
+enum MessageDrafts {
     struct Draft {
-        let id: String
         let handle: String
         let name: String
         let text: String
-        let turn: Int
     }
 
-    private var drafts: [String: Draft] = [:]
-    private var counter = 0
-
-    func add(handle: String, name: String, text: String) -> Draft {
-        counter += 1
-        let draft = Draft(id: "d\(counter)", handle: handle, name: name, text: text, turn: Agent.currentTurn)
-        drafts[draft.id] = draft
-        return draft
-    }
-
-    /// Returns the draft only if the user has spoken since it was created (i.e. had a chance to confirm).
-    func takeConfirmed(_ id: String) throws -> Draft {
-        guard let draft = drafts[id] else { throw TESSError("There's no draft \(id). Make one with draft_message first.") }
-        guard Agent.currentTurn > draft.turn else {
-            throw TESSError("Not sent: the user hasn't confirmed yet. Read the draft back and wait for their answer.")
-        }
-        drafts[id] = nil
-        return draft
-    }
+    static let box = DraftBox<Draft>(prefix: "d", noun: "message draft")
 }
 
 // MARK: - Contacts

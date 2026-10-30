@@ -35,6 +35,11 @@ struct OpenAICompatibleProvider: LLMProvider {
             }
         }
 
+        return try Self.parse(response, provider: name)
+    }
+
+    /// Turns a Chat Completions response into an `LLMReply` (also strips `<think>` reasoning).
+    static func parse(_ response: JSONObject, provider name: String) throws -> LLMReply {
         guard let choice = (response["choices"] as? [JSONObject])?.first,
               let message = choice["message"] as? JSONObject else {
             throw TESSError("\(name) sent back an empty response.")
