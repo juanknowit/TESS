@@ -44,10 +44,7 @@ struct NewsArea {
     /// Looks up the home city's country (cached). Falls back to the Mac's region when no city is set.
     static func resolve(homeCity: String) async -> NewsArea {
         let key = homeCity.lowercased()
-        lock.lock()
-        let cached = cache[key]
-        lock.unlock()
-        if let cached { return cached }
+        if let cached = lock.withLock({ cache[key] }) { return cached }
 
         var area: NewsArea
         if !homeCity.isEmpty, let place = try? await InfoTools.geocode(homeCity), !place.countryCode.isEmpty {
@@ -58,9 +55,7 @@ struct NewsArea {
             area = NewsArea(city: homeCity.split(separator: ",").first.map { String($0).trimmed } ?? "",
                             region: "", countryName: name, countryCode: code)
         }
-        lock.lock()
-        cache[key] = area
-        lock.unlock()
+        lock.withLock { cache[key] = area }
         return area
     }
 

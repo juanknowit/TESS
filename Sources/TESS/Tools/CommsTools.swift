@@ -200,11 +200,12 @@ enum ContactResolver {
         let handle: String
     }
 
-    static func resolve(_ query: String) async throws -> Recipient {
+    /// - Parameter preferEmail: pick the contact's email address (for Mail) instead of their mobile number.
+    static func resolve(_ query: String, preferEmail: Bool = false) async throws -> Recipient {
         let trimmed = query.trimmed
         let digits = trimmed.filter { $0.isNumber || $0 == "+" }
         if trimmed.contains("@") { return Recipient(name: trimmed, handle: trimmed) }
-        if digits.count >= 6 && Double(digits.count) >= Double(trimmed.count) * 0.6 {
+        if !preferEmail && digits.count >= 6 && Double(digits.count) >= Double(trimmed.count) * 0.6 {
             return Recipient(name: trimmed, handle: digits)
         }
 
@@ -225,7 +226,7 @@ enum ContactResolver {
             CNContactPhoneNumbersKey, CNContactEmailAddressesKey,
         ].map { $0 as CNKeyDescriptor }
         let matches = try store.unifiedContacts(matching: CNContact.predicateForContacts(matchingName: trimmed), keysToFetch: keys)
-            .filter { !$0.phoneNumbers.isEmpty || !$0.emailAddresses.isEmpty }
+            .filter { preferEmail ? !$0.emailAddresses.isEmpty : (!$0.phoneNumbers.isEmpty || !$0.emailAddresses.isEmpty) }
 
         guard !matches.isEmpty else { throw TESSError("I couldn't find \(trimmed) in your contacts.") }
 
@@ -240,12 +241,15 @@ enum ContactResolver {
                 let names = matches.prefix(5).map(displayName).joined(separator: ", ")
                 throw TESSError("Several contacts match \(trimmed): \(names). Ask which one.")
             }
-            return try recipient(exact[0], name: displayName(exact[0]))
+            return try recipient(exact[0], name: displayName(exact[0]), preferEmail: preferEmail)
         }
-        return try recipient(matches[0], name: displayName(matches[0]))
+        return try recipient(matches[0], name: displayName(matches[0]), preferEmail: preferEmail)
     }
 
-    private static func recipient(_ contact: CNContact, name: String) throws -> Recipient {
+    private static func recipient(_ contact: CNContact, name: String, preferEmail: Bool) throws -> Recipient {
+        if preferEmail, let email = contact.emailAddresses.first {
+            return Recipient(name: name, handle: email.value as String)
+        }
         let mobileLabels = [CNLabelPhoneNumberMobile, CNLabelPhoneNumberiPhone]
         if let mobile = contact.phoneNumbers.first(where: { mobileLabels.contains($0.label ?? "") }) {
             return Recipient(name: name, handle: mobile.value.stringValue)

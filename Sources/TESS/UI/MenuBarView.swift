@@ -14,6 +14,7 @@ struct MenuBarView: View {
     @EnvironmentObject var settings: AppSettings
     @EnvironmentObject var meter: LevelMeter
     @ObservedObject private var ui = UIState.shared
+    @ObservedObject private var history = HistoryStore.shared
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -46,6 +47,27 @@ struct MenuBarView: View {
                 .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 8))
             }
 
+            if history.enabled && !history.entries.isEmpty {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        Text("Recent").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                        Spacer()
+                        Button("History…") {
+                            SettingsWindow.shared.show(settings: settings, assistant: assistant, pane: .history)
+                        }
+                        .buttonStyle(.link)
+                        .font(.caption)
+                    }
+                    ForEach(Array(history.entries.suffix(3).reversed())) { entry in
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(entry.question).font(.caption.weight(.medium)).lineLimit(1)
+                            Text(entry.answer).font(.caption2).foregroundStyle(.secondary).lineLimit(2)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                }
+            }
+
             TextField("Type to TESS…", text: $ui.typed)
                 .textFieldStyle(.roundedBorder)
                 .onSubmit {
@@ -71,6 +93,7 @@ struct MenuBarView: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                 Spacer()
+                Button("Skills") { SettingsWindow.shared.show(settings: settings, assistant: assistant, pane: .skills) }
                 Button("Settings…") { SettingsWindow.shared.show(settings: settings, assistant: assistant) }
                 Button("Quit") { NSApp.terminate(nil) }
             }
@@ -99,4 +122,7 @@ final class UIState: ObservableObject {
     @Published var newMemory = ""
     @Published var confirmClearMemories = false
     @Published var confirmResetUsage = false
+    @Published var skillsSearch = ""
+    @Published var historySearch = ""
+    @Published var confirmClearHistory = false
 }

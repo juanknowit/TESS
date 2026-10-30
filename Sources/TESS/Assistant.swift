@@ -201,10 +201,14 @@ final class Assistant: ObservableObject {
             guard !Task.isCancelled else { return }
             lastInteraction = Date()
             let spoken = SpeechText.clean(answer)
+            HistoryStore.shared.add(question: text, answer: spoken.isEmpty ? "Done." : spoken,
+                                    provider: "\(provider.name) · \(provider.model)")
             await speakThen(spoken.isEmpty ? "Done." : spoken, followUp: true)
         } catch {
             guard !Task.isCancelled, !(error is CancellationError) else { return }
-            await speakThen(Self.spokenError(error, provider: provider.name), followUp: false)
+            let message = Self.spokenError(error, provider: provider.name)
+            HistoryStore.shared.add(question: text, answer: message, provider: provider.name, failed: true)
+            await speakThen(message, followUp: false)
         }
     }
 
@@ -330,6 +334,25 @@ final class Assistant: ObservableObject {
 
     /// Things said in the current conversation (short-term memory).
     var conversationTurns: Int { agent.userTurns }
+
+    /// Runs a protocol straight from Settings, without asking the AI.
+    func runRoutine(_ routine: Routine) {
+        work?.cancel()
+        speaker.stop()
+        heard = "Run \(routine.name)"
+        reply = ""
+        status = "Running \(routine.name)…"
+        setPhase(.thinking)
+        let context = settings.toolContext
+        work = Task { [weak self] in
+            let result = await RoutineRunner.run(routine, context: context)
+            guard let self, !Task.isCancelled else { return }
+            let spoken = result.spoken(for: routine)
+            HistoryStore.shared.add(question: "Run \(routine.name)", answer: spoken, provider: "Protocol",
+                                    failed: !result.failed.isEmpty)
+            await self.speakThen(spoken, followUp: false)
+        }
+    }
 
     func newConversation() {
         agent.reset()

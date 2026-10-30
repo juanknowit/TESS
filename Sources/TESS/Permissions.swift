@@ -75,13 +75,19 @@ final class PermissionCenter: ObservableObject {
     private static let screenAskedKey = "screenPermissionAsked"
 
     /// Apps TESS sends Apple Events to.
-    static let automationTargets: [(bundleID: String, name: String)] = [
+    nonisolated static let automationTargets: [(bundleID: String, name: String)] = [
         ("com.apple.systemevents", "System Events"),
         ("com.apple.finder", "Finder"),
         ("com.apple.Notes", "Notes"),
         ("com.apple.MobileSMS", "Messages"),
         ("com.apple.Music", "Music"),
         ("com.spotify.client", "Spotify"),
+        ("com.apple.mail", "Mail"),
+        ("com.apple.Safari", "Safari"),
+        ("com.google.Chrome", "Google Chrome"),
+        ("com.microsoft.edgemac", "Microsoft Edge"),
+        ("company.thebrowser.Browser", "Arc"),
+        ("com.brave.Browser", "Brave"),
     ]
 
     var grantedCount: Int { PermissionKind.allCases.filter { states[$0] == .granted }.count }
