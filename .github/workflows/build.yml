@@ -39,7 +39,7 @@ jobs:
         # ditto keeps the bundle's permissions and structure intact.
         run: ditto -c -k --keepParent build.noindex/TESS.app TESS.zip
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: TESS
           path: TESS.zip
