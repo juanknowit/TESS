@@ -95,7 +95,7 @@ struct OrbView: View {
         let ticks = 48
         let tickR = radius * 0.97
         for k in 0..<ticks {
-            let a = Double(k) / Double(ticks) * 2 * .pi + t * 0.15
+            let a = CGFloat(Double(k) / Double(ticks) * 2 * .pi + t * 0.15)
             let len: CGFloat = k % 4 == 0 ? 6 : 3
             var tick = Path()
             tick.move(to: CGPoint(x: center.x + cos(a) * tickR, y: center.y + sin(a) * tickR))
