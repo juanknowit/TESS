@@ -15,15 +15,25 @@ jobs:
     name: Build TESS.app
     runs-on: macos-15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Toolchain
         run: |
           sw_vers
+          xcodebuild -version || true
           swift --version
+          echo "::notice title=Toolchain::$(sw_vers -productVersion) / $(swift --version 2>&1 | head -1)"
 
       - name: Build and package
-        run: ./build.sh
+        run: |
+          set -o pipefail
+          if ! ./build.sh 2>&1 | tee build.log; then
+            # Surface compiler errors as annotations on the run.
+            grep -E "error:" build.log | sed -E 's/\x1b\[[0-9;]*m//g' | sort -u | head -40 | while IFS= read -r line; do
+              echo "::error::${line}"
+            done
+            exit 1
+          fi
 
       - name: Zip app
         # ditto keeps the bundle's permissions and structure intact.
