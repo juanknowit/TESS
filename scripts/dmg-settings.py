@@ -5,10 +5,11 @@ import os.path
 app = defines["app"]
 app_name = os.path.basename(app)
 
-# make-dmg.sh builds read-write first (to adjust the label colour), then compresses to ULFO.
-format = defines.get("format", "ULFO")
+format = "ULFO"            # LZFSE-compressed, read-only (macOS 10.11+)
 filesystem = "HFS+"
 files = [app]
+# Finder draws icon names in dark text on a picture background (in Light and Dark Mode), so the
+# artwork puts a light pill under each name. See scripts/dmg-background.py.
 applications = "Applications"
 symlinks = {applications: "/Applications"}
 hide_extension = [app_name]

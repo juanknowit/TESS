@@ -32,17 +32,7 @@ python3 -m dmgbuild -s scripts/dmg-settings.py \
   -D app="$APP" \
   -D background="$TMP/background.tiff" \
   -D volume_icon="Resources/AppIcon.icns" \
-  -D format=UDRW \
-  "$VOLUME" "$TMP/installer.dmg"
-
-# Give the window a navy background colour behind the picture, so Finder draws the names in white.
-MOUNT="$(hdiutil attach "$TMP/installer.dmg" -nobrowse -noautoopen -plist \
-  | python3 -c 'import plistlib,sys; print(next(e["mount-point"] for e in plistlib.loads(sys.stdin.buffer.read())["system-entities"] if "mount-point" in e))')"
-python3 scripts/dmg-label-color.py "$MOUNT/.DS_Store"
-rm -rf "$MOUNT/.fseventsd"
-hdiutil detach "$MOUNT" -quiet || hdiutil detach "$MOUNT" -force -quiet
-
-hdiutil convert "$TMP/installer.dmg" -format ULFO -o "$OUT" -quiet
+  "$VOLUME" "$OUT"
 
 hdiutil verify "$OUT" >/dev/null
 echo "✓ $(basename "$OUT") ($(du -h "$OUT" | cut -f1 | xargs))"
