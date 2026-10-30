@@ -17,24 +17,85 @@ cp "$BIN" "$APP/Contents/MacOS/TESS"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
 cp Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 
-# Sign with your Apple Development certificate if you have one (keeps macOS permissions across rebuilds),
-# otherwise ad-hoc. Override with SIGN_IDENTITY="…".
+# ── Signing ────────────────────────────────────────────────────────────────────
+# macOS remembers permissions (Screen Recording, Accessibility, Automation…) per code signature.
+# Ad-hoc signatures change with every build, so permissions would reset after each rebuild.
+# We therefore sign with a stable identity, in this order:
+#   1. $SIGN_IDENTITY, if set
+#   2. an "Apple Development" certificate, if you have one (Xcode signed in to an Apple ID)
+#   3. a free, self-signed "TESS Local Signing" certificate created once in your login keychain
+#   4. ad-hoc, as a last resort (and on CI)
+CERT_NAME="TESS Local Signing"
+
+create_local_identity() {
+  echo "▸ Creating a local signing certificate \"$CERT_NAME\" (one time only)…"
+  local tmp; tmp="$(mktemp -d)"
+  cat > "$tmp/cert.cnf" <<CNF
+[ req ]
+distinguished_name = dn
+x509_extensions = ext
+prompt = no
+[ dn ]
+CN = $CERT_NAME
+[ ext ]
+basicConstraints = critical,CA:false
+keyUsage = critical,digitalSignature
+extendedKeyUsage = critical,codeSigning
+CNF
+  local pass="tess-$RANDOM-$RANDOM"
+  /usr/bin/openssl req -x509 -newkey rsa:2048 -nodes -days 3650 -config "$tmp/cert.cnf" \
+    -keyout "$tmp/key.pem" -out "$tmp/cert.pem" >/dev/null 2>&1 &&
+  /usr/bin/openssl pkcs12 -export -name "$CERT_NAME" -inkey "$tmp/key.pem" -in "$tmp/cert.pem" \
+    -out "$tmp/identity.p12" -passout "pass:$pass" >/dev/null 2>&1 &&
+  security import "$tmp/identity.p12" -k "$HOME/Library/Keychains/login.keychain-db" -P "$pass" \
+    -T /usr/bin/codesign >/dev/null
+  local status=$?
+  rm -rf "$tmp"
+  return $status
+}
+
 IDENTITY="${SIGN_IDENTITY:-}"
+RUNTIME=()
 if [ -z "$IDENTITY" ]; then
-  IDENTITY="$(security find-identity -v -p codesigning 2>/dev/null | grep -m1 'Apple Development' | sed -E 's/.*"(.*)"/\1/' || true)"
+  DEV="$(security find-identity -v -p codesigning 2>/dev/null | grep -m1 'Apple Development' | sed -E 's/.*"(.*)"/\1/' || true)"
+  if [ -n "$DEV" ]; then
+    IDENTITY="$DEV"
+    RUNTIME=(--options runtime --entitlements Resources/TESS.entitlements)
+  elif [ -z "${CI:-}" ]; then
+    if ! security find-identity -p codesigning 2>/dev/null | grep -q "\"$CERT_NAME\""; then
+      create_local_identity || echo "  (couldn't create it — falling back to ad-hoc signing)"
+    fi
+    if security find-identity -p codesigning 2>/dev/null | grep -q "\"$CERT_NAME\""; then
+      IDENTITY="$CERT_NAME"
+    fi
+  fi
 fi
-if [ -n "$IDENTITY" ]; then
-  echo "▸ Signing with: $IDENTITY"
-  codesign --force --options runtime --entitlements Resources/TESS.entitlements --sign "$IDENTITY" "$APP"
+
+if [ -n "$IDENTITY" ] && codesign --force ${RUNTIME[@]+"${RUNTIME[@]}"} --sign "$IDENTITY" "$APP" 2>/dev/null; then
+  echo "▸ Signed with: $IDENTITY (permissions survive rebuilds)"
+  SIGNED_AS="$IDENTITY"
 else
-  echo "▸ Signing ad-hoc (macOS may ask for permissions again after each rebuild)"
+  [ -n "$IDENTITY" ] && echo "  (signing with \"$IDENTITY\" failed — using ad-hoc)"
   codesign --force --sign - "$APP"
+  echo "▸ Signed ad-hoc (macOS may ask for permissions again after each rebuild)"
+  SIGNED_AS="ad-hoc"
 fi
 
 echo "✓ Built $APP"
 
 if [ "${1:-}" = "--install" ]; then
   pkill -x TESS 2>/dev/null || true
+
+  # The first time TESS is installed with a new signing identity, clear the permissions macOS recorded
+  # for the old one. Otherwise System Settings shows TESS switched on while the new build is still refused.
+  MARKER="$HOME/Library/Application Support/TESS/signing-identity"
+  if [ "$SIGNED_AS" != "ad-hoc" ] && [ "$(cat "$MARKER" 2>/dev/null)" != "$SIGNED_AS" ]; then
+    echo "▸ New signing identity — resetting TESS's old macOS permissions so you can grant them once more"
+    tccutil reset All app.tess.assistant >/dev/null 2>&1 || true
+    mkdir -p "$(dirname "$MARKER")"
+    printf '%s' "$SIGNED_AS" > "$MARKER"
+  fi
+
   rm -rf /Applications/TESS.app
   cp -R "$APP" /Applications/
   rm -rf build.noindex

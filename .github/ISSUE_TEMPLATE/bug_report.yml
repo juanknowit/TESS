@@ -1,0 +1,42 @@
+name: Bug report
+description: Something TESS did (or didn't do) that looks wrong
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you said or did, what TESS replied, and what you expected instead.
+      placeholder: |
+        I said "Hey Tess, what's the weather tomorrow?"
+        She replied "…"
+        I expected …
+    validations:
+      required: true
+  - type: dropdown
+    id: brain
+    attributes:
+      label: AI provider
+      options:
+        - Claude
+        - OpenAI
+        - Ollama (local)
+    validations:
+      required: true
+  - type: input
+    id: model
+    attributes:
+      label: Model
+      placeholder: e.g. claude-sonnet-5-5, gpt-5.4-mini, qwen3:8b
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version
+      placeholder: e.g. macOS 27.2
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: Screenshots or logs
+      description: Screenshots of the HUD or Settings help a lot. Please remove any API keys or personal details.

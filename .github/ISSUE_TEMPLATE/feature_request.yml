@@ -1,0 +1,21 @@
+name: New skill or idea
+description: Something you'd like TESS to be able to do
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: What should TESS do?
+      description: Describe it the way you'd say it to her.
+      placeholder: '"Hey Tess, turn on focus mode and open my work apps."'
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why would it help?
+  - type: textarea
+    id: how
+    attributes:
+      label: Ideas for how it could work
+      description: Apps or APIs involved, permissions it might need, anything else.
