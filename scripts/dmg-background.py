@@ -63,13 +63,14 @@ for cxv,op in [(310,0.30),(336,0.62),(362,1.0)]:
 glow=a.filter(ImageFilter.GaussianBlur(6*S))
 img.paste(glow,(0,0),glow); img.paste(glow,(0,0),glow); img.paste(a,(0,0),a)
 
-# Name pills: dark, so Finder (which judges the brightness right under each name) draws both names in white.
+# Name pills: light, because Finder always draws icon names in dark text on a picture background
+# (in Light and Dark Mode alike), and dark text needs a light backdrop on the navy artwork.
 p_=layer(); pd=ImageDraw.Draw(p_)
 # Centres measured from Finder on macOS 27: 13-point names sit 74 points below the icon centre
 # (and half a point left). Widths = text width + 16 points each side.
 for (cx_,cy_),wd in [((169.0,279.0),62),((469.0,279.0),106)]:
     pd.rounded_rectangle([(cx_-wd/2)*S,(cy_-11)*S,(cx_+wd/2)*S,(cy_+11)*S],radius=11*S,
-                         fill=(7,14,27,235),outline=(70,215,255,70),width=S)
+                         fill=(214,229,243,240),outline=(140,225,255,200),width=S)
 img.paste(p_,(0,0),p_)
 
 d=ImageDraw.Draw(img)
