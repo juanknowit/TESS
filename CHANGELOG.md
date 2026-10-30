@@ -4,6 +4,15 @@ All notable changes to TESS are listed here. The format follows [Keep a Changelo
 
 ## [Unreleased]
 
+## [0.9.3-beta] — 2026-10-31
+
+### Changed
+- Sending messages and emails is stricter: TESS checks your actual words and sends only when your very next reply after the read-back is a clear yes ("yes", "send it", "go ahead"). A no cancels the draft, anything unclear makes TESS ask again, a newer draft replaces older ones, and read-backs expire after five minutes
+
+### Development
+- Automated tests for version comparison, send confirmation, the agent's tool loop and history repair, and Claude/OpenAI response parsing; they run on every pull request
+- Pull-request and main builds no longer see the signing certificate; only the release job can sign and publish
+
 ## [0.9.2-beta] — 2026-10-30
 
 ### Changed
@@ -68,7 +77,8 @@ First public beta.
 - Every release is signed with the same certificate, so permissions survive updates
 - `build.sh` builds and installs with only the Command Line Tools, signing with a stable local identity
 
-[Unreleased]: https://github.com/juanknowit/TESS/compare/v0.9.2-beta...HEAD
+[Unreleased]: https://github.com/juanknowit/TESS/compare/v0.9.3-beta...HEAD
+[0.9.3-beta]: https://github.com/juanknowit/TESS/compare/v0.9.2-beta...v0.9.3-beta
 [0.9.2-beta]: https://github.com/juanknowit/TESS/compare/v0.9.1-beta...v0.9.2-beta
 [0.9.1-beta]: https://github.com/juanknowit/TESS/compare/v0.9.0-beta...v0.9.1-beta
 [0.9.0-beta]: https://github.com/juanknowit/TESS/releases/tag/v0.9.0-beta

@@ -11,6 +11,18 @@ Thanks for helping make TESS better! Bug reports, ideas and pull requests are al
 
 Only the Xcode Command Line Tools are required. Every pull request is also built on GitHub Actions.
 
+## Tests
+
+```bash
+swift test
+```
+
+Tests live in `Tests/TESSTests` and use XCTest, which ships with full Xcode (not the Command Line Tools), so they may not run on a Mac with only the Command Line Tools. GitHub Actions runs them on every pull request, and a pull request can only be merged when they pass.
+
+Test logic, not macOS: keep decisions in small pure functions (see `ConfirmationGate`, `Agent.repaired`, `AnthropicProvider.parse`) and use a fake `LLMProvider` instead of real API calls.
+
+Anything that sends something on the user's behalf must go through a `DraftBox`, so it can only be sent after a clear yes.
+
 ## Code conventions
 
 - **No SwiftUI property-wrapper macros** (`@State`, `@Observable`, `@Entry`, `#Preview`). On recent SDKs these need a compiler plugin that ships only with full Xcode, and TESS must build with the Command Line Tools alone. Keep view state in `UIState.shared` (see `UI/MenuBarView.swift`) or another `ObservableObject`.

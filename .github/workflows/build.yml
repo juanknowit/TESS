@@ -44,7 +44,11 @@ jobs:
           echo "::notice title=Toolchain::$(sw_vers -productVersion) / $(swift --version 2>&1 | head -1)"
 
       - name: Run tests
-        run: swift test
+        run: |
+          set -o pipefail
+          swift test 2>&1 | tee test.log
+          SUMMARY="$(grep -E "Executed [0-9]+ tests?" test.log | tail -1 | sed -E 's/^[[:space:]]+//')"
+          echo "::notice title=Tests::${SUMMARY:-no test summary found}"
 
   build:
     name: Build TESS
