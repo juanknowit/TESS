@@ -1,6 +1,6 @@
 # Releasing TESS
 
-Releases are built and published by GitHub Actions ([`.github/workflows/build.yml`](.github/workflows/build.yml)). Every push and pull request also builds the installer and attaches it to the workflow run as an artifact, so you can test it before releasing.
+Releases are built and published by GitHub Actions ([`.github/workflows/build.yml`](.github/workflows/build.yml)). Every push and pull request runs the tests (**Test**) and builds an unsigned installer (**Build TESS**), attached to the run as an artifact so you can try it before releasing. Only the **Release** job can see the signing certificate or publish.
 
 ## Cut a release
 

@@ -1,9 +1,9 @@
 name: Build
 
-# Every push and pull request builds TESS and keeps the installer as a downloadable artifact.
-# To publish a GitHub release, either run this workflow from the Actions tab with a version
-# (e.g. 0.9.0-beta), or push a tag such as v1.0.0. Versions with a "-", like -beta,
-# are marked as pre-releases. See RELEASING.md.
+# Every push and pull request runs the tests and builds an (unsigned) installer, kept as an artifact.
+# To publish a GitHub release, run this workflow from the Actions tab with a version (e.g. 0.9.3-beta),
+# or push a tag such as v1.0.0. Versions with a "-", like -beta, are marked as pre-releases.
+# Only the Release job can see the signing certificate or write to the repository. See RELEASING.md.
 
 on:
   push:
@@ -13,12 +13,12 @@ on:
   workflow_dispatch:
     inputs:
       release:
-        description: "Publish a release with this version, e.g. 0.9.0-beta or 1.0.0 (leave empty for a test build)"
+        description: "Publish a release with this version, e.g. 0.9.3-beta or 1.0.0 (leave empty for a test build)"
         required: false
         default: ""
 
 permissions:
-  contents: write # needed to publish releases
+  contents: read
 
 # Only pull-request builds replace each other. Builds of main and releases always run to the end,
 # so publishing a release never cancels the main build (which drives the README badge).
@@ -26,15 +26,13 @@ concurrency:
   group: build-${{ github.event_name }}-${{ github.ref }}-${{ inputs.release || 'build' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+env:
+  IS_RELEASE: ${{ startsWith(github.ref, 'refs/tags/v') || inputs.release != '' }}
+
 jobs:
-  build:
-    name: Build TESS
+  test:
+    name: Test
     runs-on: macos-15
-    env:
-      IS_RELEASE: ${{ startsWith(github.ref, 'refs/tags/v') || inputs.release != '' }}
-      HAS_DEVELOPER_ID: ${{ secrets.DEVELOPER_ID_P12 != '' }}
-      HAS_TESS_SIGNING: ${{ secrets.TESS_SIGNING_P12 != '' }}
-      UNIVERSAL: "1"
     steps:
       - uses: actions/checkout@v5
 
@@ -45,38 +43,53 @@ jobs:
           swift --version
           echo "::notice title=Toolchain::$(sw_vers -productVersion) / $(swift --version 2>&1 | head -1)"
 
+      - name: Run tests
+        run: |
+          set -o pipefail
+          swift test 2>&1 | tee test.log
+          SUMMARY="$(grep -E "Executed [0-9]+ tests?" test.log | tail -1 | sed -E 's/^[[:space:]]+//')"
+          echo "::notice title=Tests::${SUMMARY:-no test summary found}"
+
+  build:
+    name: Build TESS
+    needs: test
+    if: ${{ !(startsWith(github.ref, 'refs/tags/v') || inputs.release != '') }}
+    runs-on: macos-15
+    env:
+      UNIVERSAL: "1"
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Version
+        run: scripts/ci-version.sh
+
+      - name: Build and package (unsigned)
+        run: scripts/ci-package.sh
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: TESS-${{ env.TESS_VERSION }}
+          path: dist/
+          if-no-files-found: error
+
+  release:
+    name: Release
+    needs: test
+    if: ${{ startsWith(github.ref, 'refs/tags/v') || inputs.release != '' }}
+    runs-on: macos-15
+    permissions:
+      contents: write # create the tag and the release
+    env:
+      UNIVERSAL: "1"
+      HAS_DEVELOPER_ID: ${{ secrets.DEVELOPER_ID_P12 != '' }}
+      HAS_TESS_SIGNING: ${{ secrets.TESS_SIGNING_P12 != '' }}
+    steps:
+      - uses: actions/checkout@v5
+
       - name: Version
         env:
           RELEASE_INPUT: ${{ inputs.release }}
-        run: |
-          if [ -n "$RELEASE_INPUT" ]; then
-            VERSION="${RELEASE_INPUT#v}"
-            if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]]; then
-              echo "::error title=Version::\"$RELEASE_INPUT\" isn't a version like 0.9.0-beta or 1.0.0"
-              exit 1
-            fi
-            if git ls-remote --exit-code --tags origin "refs/tags/v$VERSION" >/dev/null; then
-              echo "::error title=Version::v$VERSION has already been released"
-              exit 1
-            fi
-          elif [ "$IS_RELEASE" = true ]; then
-            VERSION="${GITHUB_REF_NAME#v}"
-          fi
-          if [ "$IS_RELEASE" = true ]; then
-            PLIST_VERSION="$(plutil -extract CFBundleShortVersionString raw Resources/Info.plist)"
-            if [ "${VERSION%%-*}" != "$PLIST_VERSION" ]; then
-              echo "::warning title=Version::Version $VERSION doesn't match Info.plist ($PLIST_VERSION); the app will say ${VERSION%%-*}."
-            fi
-          else
-            VERSION="$(plutil -extract CFBundleShortVersionString raw Resources/Info.plist)-dev.$GITHUB_RUN_NUMBER"
-          fi
-          {
-            echo "RELEASE_TAG=v$VERSION"
-            echo "TESS_VERSION=$VERSION"
-            echo "TESS_BUILD=$GITHUB_RUN_NUMBER"
-            echo "RELEASE_NAME=TESS ${VERSION//-/ }"
-          } >> "$GITHUB_ENV"
-          echo "::notice title=Version::$VERSION (build $GITHUB_RUN_NUMBER)"
+        run: scripts/ci-version.sh
 
       - name: Signing certificate
         env:
@@ -87,68 +100,27 @@ jobs:
         run: |
           if [ "$HAS_DEVELOPER_ID" = true ]; then
             scripts/ci-import-certificate.sh DEVELOPER_ID
-            echo "SIGN_HARDENED=1" >> "$GITHUB_ENV"
+            { echo "SIGN_HARDENED=1"; echo "NOTARIZE=1"; } >> "$GITHUB_ENV"
           elif [ "$HAS_TESS_SIGNING" = true ]; then
             scripts/ci-import-certificate.sh TESS_SIGNING
-          elif [ "$IS_RELEASE" = true ]; then
-            echo "::error title=No signing certificate::Add the TESS_SIGNING_P12 and TESS_SIGNING_PASSWORD secrets before tagging a release (see RELEASING.md)."
-            exit 1
           else
-            echo "::notice title=Signing::No certificate secrets available, so this build is signed ad-hoc."
-          fi
-
-      - name: Build app
-        run: |
-          set -o pipefail
-          if ! ./build.sh 2>&1 | tee build.log; then
-            # Surface compiler errors as annotations on the run.
-            grep -E "error:" build.log | sed -E 's/\x1b\[[0-9;]*m//g' | sort -u | head -40 | while IFS= read -r line; do
-              echo "::error::${line}"
-            done
+            echo "::error title=No signing certificate::Add the TESS_SIGNING_P12 and TESS_SIGNING_PASSWORD secrets before releasing (see RELEASING.md)."
             exit 1
           fi
-          lipo -archs build.noindex/TESS.app/Contents/MacOS/TESS
-          codesign -dv build.noindex/TESS.app 2>&1 | grep -E "^(Identifier|Authority|Signature|TeamIdentifier|Runtime)" || true
 
-      - name: Make installer
-        run: scripts/make-dmg.sh build.noindex/TESS.app "dist/TESS-$TESS_VERSION.dmg" "$RELEASE_NAME"
-
-      - name: Notarise
-        if: env.HAS_DEVELOPER_ID == 'true'
+      - name: Build and package (signed)
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
-        run: |
-          DMG="dist/TESS-$TESS_VERSION.dmg"
-          codesign --sign "$SIGN_IDENTITY" --timestamp "$DMG"
-          xcrun notarytool submit "$DMG" --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" \
-            --password "$APPLE_APP_PASSWORD" --wait
-          xcrun stapler staple "$DMG"
-          xcrun stapler staple build.noindex/TESS.app
-          echo "NOTARIZED=1" >> "$GITHUB_ENV"
-
-      - name: Zip and checksums
-        run: |
-          # ditto keeps the bundle's permissions and structure intact.
-          ditto -c -k --keepParent build.noindex/TESS.app "dist/TESS-$TESS_VERSION.zip"
-          cd dist
-          shasum -a 256 *.dmg *.zip > SHA256SUMS.txt
-          cat SHA256SUMS.txt
-          ls -lh
-
-      - uses: actions/upload-artifact@v5
-        with:
-          name: TESS-${{ env.TESS_VERSION }}
-          path: dist/
-          if-no-files-found: error
+        run: scripts/ci-package.sh
 
       - name: Release notes
-        if: env.IS_RELEASE == 'true'
-        run: scripts/release-notes.sh "$TESS_VERSION" | tee release-notes.md
+        run: |
+          set -o pipefail
+          scripts/release-notes.sh "$TESS_VERSION" | tee release-notes.md
 
       - name: Publish release
-        if: env.IS_RELEASE == 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.RELEASE_TAG }}
@@ -160,6 +132,11 @@ jobs:
             dist/*.dmg
             dist/*.zip
             dist/SHA256SUMS.txt
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: TESS-${{ env.TESS_VERSION }}
+          path: dist/
 
       - name: Remove signing keychain
         if: always()

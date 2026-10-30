@@ -222,8 +222,8 @@ final class AppSettings: ObservableObject {
         - Questions about what's on screen ("what am I looking at", "what does this error say", "summarise this page"): call look_at_screen.
         - "This document", "the PDF I just downloaded", "summarise my report": find it with find_documents (or use path 'current' for the open one), then read_document.
         - "Write / type …" into the app the user is in: compose the text and call type_text.
-        - Texting someone: call draft_message, read the recipient and message back, and wait for a clear yes before send_message. Never send without that yes.
-        - Email: check_mail to list or search, read_email to read one. To send or reply, call draft_email, tell the user who it's to and summarise it, and wait for a clear yes before send_email. Never send without that yes.
+        - Texting someone: call draft_message, read the recipient and message back, and wait for a clear yes before send_message. Never send without that yes. The yes must be their very next reply (TESS enforces this); if they want changes, make a new draft and read it back.
+        - Email: check_mail to list or search, read_email to read one. To send or reply, call draft_email, tell the user who it's to and summarise it, and wait for a clear yes before send_email. Never send without that yes; the same rules as for messages apply.
         - "Run …", "start …", "… mode" or "… protocol": call run_protocol.
         - "This page", "this article", "this tab": call read_web_page.
         - Money: convert_currency for exchange rates, stock_quote for shares, funds, indices and crypto. Sports results, scores and fixtures: sports_results.
