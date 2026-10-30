@@ -1,5 +1,9 @@
 name: Build
 
+# Every push and pull request builds TESS and keeps the installer as a downloadable artifact.
+# Pushing a tag such as v0.9.0-beta or v1.0.0 also publishes a GitHub release
+# (tags with a "-", like -beta, are marked as pre-releases). See RELEASING.md.
+
 on:
   push:
     branches: [main]
@@ -8,12 +12,21 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write # needed to attach TESS.zip to releases
+  contents: write # needed to publish releases
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
 
 jobs:
   build:
-    name: Build TESS.app
+    name: Build TESS
     runs-on: macos-15
+    env:
+      IS_RELEASE: ${{ startsWith(github.ref, 'refs/tags/v') }}
+      HAS_DEVELOPER_ID: ${{ secrets.DEVELOPER_ID_P12 != '' }}
+      HAS_TESS_SIGNING: ${{ secrets.TESS_SIGNING_P12 != '' }}
+      UNIVERSAL: "1"
     steps:
       - uses: actions/checkout@v5
 
@@ -24,7 +37,44 @@ jobs:
           swift --version
           echo "::notice title=Toolchain::$(sw_vers -productVersion) / $(swift --version 2>&1 | head -1)"
 
-      - name: Build and package
+      - name: Version
+        run: |
+          if [ "$IS_RELEASE" = true ]; then
+            VERSION="${GITHUB_REF_NAME#v}"
+            PLIST_VERSION="$(plutil -extract CFBundleShortVersionString raw Resources/Info.plist)"
+            if [ "${VERSION%%-*}" != "$PLIST_VERSION" ]; then
+              echo "::warning title=Version::Tag $GITHUB_REF_NAME doesn't match Info.plist ($PLIST_VERSION); the app will say ${VERSION%%-*}."
+            fi
+          else
+            VERSION="$(plutil -extract CFBundleShortVersionString raw Resources/Info.plist)-dev.$GITHUB_RUN_NUMBER"
+          fi
+          {
+            echo "TESS_VERSION=$VERSION"
+            echo "TESS_BUILD=$GITHUB_RUN_NUMBER"
+            echo "RELEASE_NAME=TESS ${VERSION//-/ }"
+          } >> "$GITHUB_ENV"
+          echo "::notice title=Version::$VERSION (build $GITHUB_RUN_NUMBER)"
+
+      - name: Signing certificate
+        env:
+          DEVELOPER_ID_P12: ${{ secrets.DEVELOPER_ID_P12 }}
+          DEVELOPER_ID_PASSWORD: ${{ secrets.DEVELOPER_ID_PASSWORD }}
+          TESS_SIGNING_P12: ${{ secrets.TESS_SIGNING_P12 }}
+          TESS_SIGNING_PASSWORD: ${{ secrets.TESS_SIGNING_PASSWORD }}
+        run: |
+          if [ "$HAS_DEVELOPER_ID" = true ]; then
+            scripts/ci-import-certificate.sh DEVELOPER_ID
+            echo "SIGN_HARDENED=1" >> "$GITHUB_ENV"
+          elif [ "$HAS_TESS_SIGNING" = true ]; then
+            scripts/ci-import-certificate.sh TESS_SIGNING
+          elif [ "$IS_RELEASE" = true ]; then
+            echo "::error title=No signing certificate::Add the TESS_SIGNING_P12 and TESS_SIGNING_PASSWORD secrets before tagging a release (see RELEASING.md)."
+            exit 1
+          else
+            echo "::notice title=Signing::No certificate secrets available, so this build is signed ad-hoc."
+          fi
+
+      - name: Build app
         run: |
           set -o pipefail
           if ! ./build.sh 2>&1 | tee build.log; then
@@ -34,20 +84,59 @@ jobs:
             done
             exit 1
           fi
+          lipo -archs build.noindex/TESS.app/Contents/MacOS/TESS
+          codesign -dv build.noindex/TESS.app 2>&1 | grep -E "^(Identifier|Authority|Signature|TeamIdentifier|Runtime)" || true
 
-      - name: Zip app
-        # ditto keeps the bundle's permissions and structure intact.
-        run: ditto -c -k --keepParent build.noindex/TESS.app TESS.zip
+      - name: Make installer
+        run: scripts/make-dmg.sh build.noindex/TESS.app "dist/TESS-$TESS_VERSION.dmg" "$RELEASE_NAME"
+
+      - name: Notarise
+        if: env.HAS_DEVELOPER_ID == 'true'
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+        run: |
+          DMG="dist/TESS-$TESS_VERSION.dmg"
+          codesign --sign "$SIGN_IDENTITY" --timestamp "$DMG"
+          xcrun notarytool submit "$DMG" --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" \
+            --password "$APPLE_APP_PASSWORD" --wait
+          xcrun stapler staple "$DMG"
+          xcrun stapler staple build.noindex/TESS.app
+          echo "NOTARIZED=1" >> "$GITHUB_ENV"
+
+      - name: Zip and checksums
+        run: |
+          # ditto keeps the bundle's permissions and structure intact.
+          ditto -c -k --keepParent build.noindex/TESS.app "dist/TESS-$TESS_VERSION.zip"
+          cd dist
+          shasum -a 256 *.dmg *.zip > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+          ls -lh
 
       - uses: actions/upload-artifact@v5
         with:
-          name: TESS
-          path: TESS.zip
+          name: TESS-${{ env.TESS_VERSION }}
+          path: dist/
           if-no-files-found: error
 
+      - name: Release notes
+        if: env.IS_RELEASE == 'true'
+        run: scripts/release-notes.sh "$TESS_VERSION" | tee release-notes.md
+
       - name: Publish release
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: env.IS_RELEASE == 'true'
         uses: softprops/action-gh-release@v2
         with:
-          files: TESS.zip
-          generate_release_notes: true
+          name: ${{ env.RELEASE_NAME }}
+          body_path: release-notes.md
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          files: |
+            dist/*.dmg
+            dist/*.zip
+            dist/SHA256SUMS.txt
+
+      - name: Remove signing keychain
+        if: always()
+        run: |
+          if [ -n "${SIGN_KEYCHAIN:-}" ]; then security delete-keychain "$SIGN_KEYCHAIN" || true; fi

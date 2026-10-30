@@ -7,3 +7,9 @@ build.noindex/
 
 # macOS
 .DS_Store
+
+# Release output and signing material
+dist/
+release-notes.md
+*.p12
+*.keychain-db

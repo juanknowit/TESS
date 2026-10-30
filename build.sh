@@ -2,12 +2,31 @@
 # Builds TESS.app from source. Needs macOS 14+ and Xcode or the Command Line Tools (xcode-select --install).
 #   ./build.sh            build into ./build.noindex/TESS.app
 #   ./build.sh --install  build, copy to /Applications and launch
+#
+# Optional environment:
+#   TESS_VERSION     version to stamp into the app, e.g. 0.9.0 or 0.9.0-beta (default: Info.plist)
+#   TESS_BUILD       build number (default: Info.plist)
+#   UNIVERSAL=1      build one app for both Apple silicon and Intel
+#   SIGN_IDENTITY    certificate name or SHA-1 to sign with
+#   SIGN_HARDENED=1  sign with the hardened runtime and a timestamp (needed for notarisation)
+#   REQUIRE_SIGNING=1  fail instead of falling back to ad-hoc signing (used for releases)
 set -euo pipefail
 cd "$(dirname "$0")"
 
-echo "▸ Compiling…"
-swift build -c release
-BIN="$(swift build -c release --show-bin-path)/TESS"
+if [ -n "${UNIVERSAL:-}" ]; then
+  # Release builds run on both Apple silicon and Intel Macs.
+  echo "▸ Compiling for Apple silicon and Intel…"
+  swift build -c release --arch arm64
+  swift build -c release --arch x86_64
+  BIN="$(mktemp -d)/TESS"
+  lipo -create -output "$BIN" \
+    "$(swift build -c release --arch arm64 --show-bin-path)/TESS" \
+    "$(swift build -c release --arch x86_64 --show-bin-path)/TESS"
+else
+  echo "▸ Compiling…"
+  swift build -c release
+  BIN="$(swift build -c release --show-bin-path)/TESS"
+fi
 
 # ".noindex" keeps Spotlight and Launchpad from listing this build copy next to the installed app.
 APP="build.noindex/TESS.app"
@@ -16,6 +35,18 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN" "$APP/Contents/MacOS/TESS"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
 cp Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
+
+# ── Version ────────────────────────────────────────────────────────────────────
+PLIST="$APP/Contents/Info.plist"
+if [ -n "${TESS_VERSION:-}" ]; then
+  # CFBundleShortVersionString must be numeric (0.9.0); the full name (0.9.0 beta) is shown in About.
+  plutil -replace CFBundleShortVersionString -string "${TESS_VERSION%%-*}" "$PLIST"
+  plutil -replace TESSDisplayVersion -string "${TESS_VERSION//-/ }" "$PLIST"
+fi
+if [ -n "${TESS_BUILD:-}" ]; then
+  plutil -replace CFBundleVersion -string "$TESS_BUILD" "$PLIST"
+fi
+echo "▸ Version $(plutil -extract CFBundleShortVersionString raw "$PLIST") ($(plutil -extract CFBundleVersion raw "$PLIST"))"
 
 # ── Signing ────────────────────────────────────────────────────────────────────
 # macOS remembers permissions (Screen Recording, Accessibility, Automation…) per code signature.
@@ -56,6 +87,9 @@ CNF
 
 IDENTITY="${SIGN_IDENTITY:-}"
 RUNTIME=()
+if [ -n "${SIGN_HARDENED:-}" ]; then
+  RUNTIME=(--options runtime --timestamp --entitlements Resources/TESS.entitlements)
+fi
 if [ -z "$IDENTITY" ]; then
   DEV="$(security find-identity -v -p codesigning 2>/dev/null | grep -m1 'Apple Development' | sed -E 's/.*"(.*)"/\1/' || true)"
   if [ -n "$DEV" ]; then
@@ -71,15 +105,22 @@ if [ -z "$IDENTITY" ]; then
   fi
 fi
 
-if [ -n "$IDENTITY" ] && codesign --force ${RUNTIME[@]+"${RUNTIME[@]}"} --sign "$IDENTITY" "$APP" 2>/dev/null; then
+SIGN_ERR="$(mktemp)"
+if [ -n "$IDENTITY" ] && codesign --force ${RUNTIME[@]+"${RUNTIME[@]}"} --sign "$IDENTITY" "$APP" 2>"$SIGN_ERR"; then
   echo "▸ Signed with: $IDENTITY (permissions survive rebuilds)"
   SIGNED_AS="$IDENTITY"
+elif [ -n "${REQUIRE_SIGNING:-}" ]; then
+  echo "✗ Signing with \"${IDENTITY:-<none>}\" failed:" >&2
+  cat "$SIGN_ERR" >&2
+  exit 1
 else
   [ -n "$IDENTITY" ] && echo "  (signing with \"$IDENTITY\" failed — using ad-hoc)"
   codesign --force --sign - "$APP"
   echo "▸ Signed ad-hoc (macOS may ask for permissions again after each rebuild)"
   SIGNED_AS="ad-hoc"
 fi
+rm -f "$SIGN_ERR"
+codesign --verify --strict "$APP"
 
 echo "✓ Built $APP"
 

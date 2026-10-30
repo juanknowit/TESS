@@ -1432,7 +1432,8 @@ private struct PermissionsPage: View {
 
 private struct AboutPage: View {
     private var version: String {
-        let short = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
+        let short = Bundle.main.object(forInfoDictionaryKey: "TESSDisplayVersion") as? String
+            ?? Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0.9.0"
         let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "1"
         return "Version \(short) (\(build))"
     }

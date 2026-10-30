@@ -4,17 +4,9 @@ All notable changes to TESS are listed here. The format follows [Keep a Changelo
 
 ## [Unreleased]
 
-### Fixed
-- Permissions now survive rebuilds: `build.sh` signs with a stable identity (Apple Development, or a one-time local “TESS Local Signing” certificate) instead of an ad-hoc signature, and clears stale permission entries once when the identity changes
-- Screen Recording shows “Restart needed?” with a **Restart TESS** button when it’s switched on but not active yet
-- Speech Recognition detects when Dictation or its on-device model is missing, and **Fix** opens Keyboard settings
-- Automation no longer counts apps that aren’t running against TESS, and closes apps it opened only to ask for permission
-- Files and Folders is recognised as set up once TESS has read documents
-- Orb drawing compiles with Swift 6.1 (GitHub’s macOS runners)
+## [0.9.0-beta] — 2026-10-30
 
-## [1.0.0] — 2026-10-30
-
-First release.
+First public beta.
 
 ### Voice
 - On-device “Hey Tess” wake word with a customisable name and language
@@ -36,13 +28,24 @@ First release.
 - Reading PDFs, Word, RTF, text and images, including the document you have open
 - Typing into the current app
 - Messages with a mandatory read-back before sending, and Apple Notes
-- Long-term memory
+- Mail: check, search and read your inbox, and draft new emails and replies (read back before sending)
+- Protocols: your own routines that open and quit apps, set the volume and appearance, play music, open links, run Apple Shortcuts, wait and speak
+- Reading and summarising the current page in Safari, Chrome, Edge, Arc and Brave
+- Currency conversion (rates by [Exchange Rate API](https://www.exchangerate-api.com)), stock and crypto prices, and football and US sports results
+- Long-term memory and conversation history
 
 ### App
 - Menu bar panel and animated HUD orb
-- Dark sidebar settings: General, Brain, Voice, Memory, Usage, Permissions and About
+- Dark sidebar settings: General, Brain, Voice, Skills, Protocols, Memory, History, Usage, Permissions and About
+- Skills page with example phrases, the permissions each skill needs and a **Try** button
 - Usage statistics with per-provider tokens, a daily trend chart and live memory use
-- One-click permission setup
-- `build.sh` builds and installs with only the Command Line Tools
+- One-click permission setup, with hints when Dictation, a restart or a System Settings switch is still needed
+- Recent conversations in the menu bar panel
 
-[1.0.0]: https://github.com/juanknowit/TESS/releases/tag/v1.0.0
+### Install
+- Drag-to-Applications disk image, universal for Apple silicon and Intel
+- Every release is signed with the same certificate, so permissions survive updates
+- `build.sh` builds and installs with only the Command Line Tools, signing with a stable local identity
+
+[Unreleased]: https://github.com/juanknowit/TESS/compare/v0.9.0-beta...HEAD
+[0.9.0-beta]: https://github.com/juanknowit/TESS/releases/tag/v0.9.0-beta
