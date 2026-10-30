@@ -32,6 +32,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         Task { await assistant.start() }
+        Updater.shared.start()
 
         // First run without a key for the chosen brain: open settings so setup is obvious.
         let needsKey: Bool

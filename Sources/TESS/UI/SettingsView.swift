@@ -12,7 +12,7 @@ import SwiftUI
 // View-local state lives in `UIState.shared`.
 
 enum SettingsPane: String, CaseIterable, Identifiable {
-    case general, brain, voice, skills, routines, memory, history, usage, permissions, about
+    case general, brain, voice, skills, routines, memory, history, usage, permissions, updates, about
     var id: String { rawValue }
 
     var title: String {
@@ -26,6 +26,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
         case .history: return "History"
         case .usage: return "Usage"
         case .permissions: return "Permissions"
+        case .updates: return "Updates"
         case .about: return "About"
         }
     }
@@ -41,6 +42,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
         case .history: return "clock.arrow.circlepath"
         case .usage: return "chart.xyaxis.line"
         case .permissions: return "lock.shield"
+        case .updates: return "arrow.down.circle"
         case .about: return "info.circle"
         }
     }
@@ -49,7 +51,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
         switch self {
         case .general, .brain, .voice: return "Essentials"
         case .skills, .routines, .memory, .history, .usage: return "Assistant"
-        case .permissions, .about: return "System"
+        case .permissions, .updates, .about: return "System"
         }
     }
 
@@ -64,6 +66,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
         case .history: return "history conversations log past questions answers"
         case .usage: return "stats statistics tokens requests commands tools chart ram memory"
         case .permissions: return "microphone speech calendar reminders accessibility automation privacy screen recording contacts files"
+        case .updates: return "update updates version upgrade release beta check download new install"
         case .about: return "version data folder"
         }
     }
@@ -181,6 +184,7 @@ struct SettingsRoot: View {
         case .history: HistoryPage()
         case .usage: UsagePage()
         case .permissions: PermissionsPage()
+        case .updates: UpdatesPage()
         case .about: AboutPage()
         }
     }
@@ -1431,6 +1435,9 @@ private struct PermissionsPage: View {
 // MARK: - About
 
 private struct AboutPage: View {
+    @ObservedObject private var ui = UIState.shared
+    @ObservedObject private var updater = Updater.shared
+
     private var version: String {
         let short = Bundle.main.object(forInfoDictionaryKey: "TESSDisplayVersion") as? String
             ?? Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0.9.0"
@@ -1455,6 +1462,13 @@ private struct AboutPage: View {
                     .foregroundStyle(Theme.tertiary)
             }
             Spacer()
+            Button {
+                ui.settingsPane = .updates
+                Task { await updater.check(userInitiated: true) }
+            } label: {
+                Label("Check for updates", systemImage: "arrow.down.circle")
+            }
+            .buttonStyle(ThemedButtonStyle())
         }
         .padding(.top, 8)
 

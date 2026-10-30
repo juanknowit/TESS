@@ -42,6 +42,7 @@ if [ -n "${TESS_VERSION:-}" ]; then
   # CFBundleShortVersionString must be numeric (0.9.0); the full name (0.9.0 beta) is shown in About.
   plutil -replace CFBundleShortVersionString -string "${TESS_VERSION%%-*}" "$PLIST"
   plutil -replace TESSDisplayVersion -string "${TESS_VERSION//-/ }" "$PLIST"
+  plutil -replace TESSVersion -string "$TESS_VERSION" "$PLIST"
 fi
 if [ -n "${TESS_BUILD:-}" ]; then
   plutil -replace CFBundleVersion -string "$TESS_BUILD" "$PLIST"
