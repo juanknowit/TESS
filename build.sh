@@ -69,6 +69,9 @@ if [ "$DEV" = 1 ]; then
   COMMIT="$(git rev-parse --short HEAD 2>/dev/null || true)"
   [ -n "$COMMIT" ] && [ -n "$(git status --porcelain 2>/dev/null)" ] && COMMIT="$COMMIT+changes"
   plutil -replace TESSCommit -string "${COMMIT:-unknown}" "$PLIST"
+  # Every Dev build gets a new signature (as with any code change), so "permissions survive rebuilds"
+  # is really exercised, not just an identical app being reinstalled.
+  plutil -replace TESSBuiltAt -string "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$PLIST"
 fi
 # Never install something whose identity doesn't match what this script is about to replace.
 if [ "$(plutil -extract CFBundleIdentifier raw "$PLIST")" != "$BUNDLE_ID" ]; then
