@@ -4,7 +4,7 @@ Releases are built and published by GitHub Actions ([`.github/workflows/build.ym
 
 ## Cut a release
 
-1. Set the version in `Resources/Info.plist`: `CFBundleShortVersionString` (numbers only, e.g. `0.9.1`) and `TESSDisplayVersion` (what About shows, e.g. `0.9.1 beta`).
+1. Set the version in `Resources/Info.plist`: `CFBundleShortVersionString` (numbers only, e.g. `0.9.1`) and `TESSDisplayVersion` (what Settings shows, e.g. `0.9.1 beta`) and `TESSVersion` (the full version the updater compares, e.g. `0.9.1-beta`).
 2. In `CHANGELOG.md`, move the items under **[Unreleased]** into a new section, `## [0.9.1-beta] — YYYY-MM-DD`, and update the links at the bottom.
 3. Commit and merge to `main`.
 4. Publish, in either of two ways:

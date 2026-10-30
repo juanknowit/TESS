@@ -4,6 +4,18 @@ All notable changes to TESS are listed here. The format follows [Keep a Changelo
 
 ## [Unreleased]
 
+## [0.9.1-beta] — 2026-10-30
+
+### Added
+- Automatic updates: TESS checks GitHub for new versions shortly after launch and every few hours, shows what's new, and installs with one click (**Install and Relaunch**, **Remind Me Later** or **Skip This Version**)
+- Updates are only installed when they match the published checksum and are signed with the same certificate, so settings, memory and permissions are kept
+- **Updates** page in Settings with the current version and build, a **Check for updates** button, and switches for automatic checks and beta versions
+- An "update available" banner in the menu bar panel, and a **Check for updates** button on the About page
+
+### Changed
+- Installer window redesigned in TESS's navy and cyan, with HUD rings and glowing chevrons
+- API keys are kept in a single keychain item, so macOS asks for the keychain password at most once after an install or update (it moves your existing keys over automatically)
+
 ## [0.9.0-beta] — 2026-10-30
 
 First public beta.
@@ -47,5 +59,6 @@ First public beta.
 - Every release is signed with the same certificate, so permissions survive updates
 - `build.sh` builds and installs with only the Command Line Tools, signing with a stable local identity
 
-[Unreleased]: https://github.com/juanknowit/TESS/compare/v0.9.0-beta...HEAD
+[Unreleased]: https://github.com/juanknowit/TESS/compare/v0.9.1-beta...HEAD
+[0.9.1-beta]: https://github.com/juanknowit/TESS/compare/v0.9.0-beta...v0.9.1-beta
 [0.9.0-beta]: https://github.com/juanknowit/TESS/releases/tag/v0.9.0-beta

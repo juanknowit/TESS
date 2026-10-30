@@ -8,7 +8,10 @@ app_name = os.path.basename(app)
 format = "ULFO"            # LZFSE-compressed, read-only (macOS 10.11+)
 filesystem = "HFS+"
 files = [app]
-symlinks = {"Applications": "/Applications"}
+# The Applications shortcut has a blank name: its label is painted into the background in white,
+# so it looks the same in Light and Dark Mode (Finder would draw it black in Light Mode).
+applications = " "
+symlinks = {applications: "/Applications"}
 hide_extension = [app_name]
 
 icon = defines.get("volume_icon")
@@ -26,5 +29,5 @@ icon_size = 112
 text_size = 13
 icon_locations = {
     app_name: (170, 205),
-    "Applications": (470, 205),
+    applications: (470, 205),
 }

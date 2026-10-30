@@ -45,7 +45,9 @@ TESS lives in your menu bar, listens for **“Hey Tess”**, thinks with the AI 
 2. Drag **TESS** onto the **Applications** folder.
 3. Open TESS from Applications. TESS isn't notarised by Apple yet, so the first time macOS says it can't verify it: click **Done**, open **System Settings › Privacy & Security**, scroll down and click **Open Anyway** next to TESS. You only need to do this once.
 
-Runs on macOS 14 Sonoma or later, on Apple silicon and Intel. To update, quit TESS and drag the new version over the old one. Settings, memory and permissions carry over, because every release is signed with the same certificate.
+Runs on macOS 14 Sonoma or later, on Apple silicon and Intel.
+
+**Updates are automatic** from 0.9.1 on: TESS checks GitHub every few hours and offers to install new versions (Settings › Updates). Settings, memory and permissions carry over, because every release is signed with the same certificate. On 0.9.0, download 0.9.1 once and drag it over the old version.
 
 > TESS is in **beta** (0.9). Expect rough edges, and please [report bugs](https://github.com/juanknowit/TESS/issues/new/choose).
 
@@ -111,6 +113,7 @@ Click the menu bar icon › **Settings…**. The window has a searchable sidebar
 - **Memory** — long-term facts TESS remembers about you. Say “Hey Tess, remember that…”, or add them by hand. Delete any memory, or turn memory off entirely.
 - **History** — your questions and her answers, grouped by day and searchable. Can be switched off.
 - **Usage** — tokens per provider, requests, commands, tools used, a daily trend chart, and TESS's live memory use.
+- **Updates** — current version, check for updates, automatic checks and beta versions.
 - **Permissions** and **About**.
 
 Usage statistics, memories, history and protocols are stored only on your Mac in `~/Library/Application Support/TESS`.

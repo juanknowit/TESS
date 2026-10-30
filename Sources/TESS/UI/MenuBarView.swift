@@ -15,6 +15,7 @@ struct MenuBarView: View {
     @EnvironmentObject var meter: LevelMeter
     @ObservedObject private var ui = UIState.shared
     @ObservedObject private var history = HistoryStore.shared
+    @ObservedObject private var updater = Updater.shared
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -45,6 +46,23 @@ struct MenuBarView: View {
                 .padding(10)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 8))
+            }
+
+            if let release = updater.latest {
+                Button { UpdateWindow.shared.show() } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "arrow.down.circle.fill").foregroundStyle(Color.accentColor)
+                        Text("TESS \(release.version.displayName) is available")
+                            .font(.callout.weight(.medium))
+                        Spacer()
+                        Text("Update…").font(.callout).foregroundStyle(Color.accentColor)
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 8)
+                    .contentShape(Rectangle())
+                    .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
+                }
+                .buttonStyle(.plain)
             }
 
             if history.enabled && !history.entries.isEmpty {
