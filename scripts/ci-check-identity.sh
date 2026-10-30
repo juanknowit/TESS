@@ -6,7 +6,10 @@ set -euo pipefail
 FLAVOR="${1:?release or dev}"
 APP="${2:?path to the .app}"
 PLIST="$APP/Contents/Info.plist"
-get() { plutil -extract "$1" raw "$PLIST" 2>/dev/null || echo "<missing>"; }
+get() {  # plutil prints its "no value" error on stdout, so only trust the output when it succeeds
+  local value
+  if value="$(plutil -extract "$1" raw "$PLIST" 2>/dev/null)"; then echo "$value"; else echo "<missing>"; fi
+}
 
 fail=0
 expect() {  # key expected
