@@ -110,7 +110,9 @@ Usage statistics and memories are stored only on your Mac in `~/Library/Applicat
 | Automation | Controlling Music, Spotify, System Events (asked on first use) |
 | Accessibility (optional) | A true screen lock; without it TESS sleeps the display instead |
 
-If you rebuild without an Apple Development certificate, macOS may ask again because the app’s signature changes. With Xcode signed in to an Apple ID, `build.sh` picks up your development certificate automatically.
+The easiest way to grant them is **Settings › Permissions › Set up everything**, which walks through each prompt and opens the right System Settings page for Screen Recording and Accessibility.
+
+**Permissions survive rebuilds.** macOS remembers permissions per code signature, so `build.sh` signs TESS with a stable identity: your *Apple Development* certificate if you have one, otherwise a free self-signed **TESS Local Signing** certificate it creates once in your login keychain. The first time, macOS may ask whether `codesign` may use that key: enter your password and choose **Always Allow**. When the signing identity changes, the installer resets TESS’s old permission entries once so you can grant them cleanly.
 
 ## Privacy
 

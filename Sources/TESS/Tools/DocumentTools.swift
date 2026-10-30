@@ -17,6 +17,7 @@ enum DocumentTools {
             "count": P.integer("How many results (default 8, max 20)"),
         ]
     ) { args in
+        UserDefaults.standard.set(true, forKey: PermissionCenter.filesAskedKey)
         let count = max(1, min(20, args.int("count") ?? 8))
         let home = NSHomeDirectory()
         var urls: [URL]
@@ -58,6 +59,7 @@ enum DocumentTools {
         required: ["path"]
     ) { args in
         guard var path = args.string("path") else { throw TESSError("Which document?") }
+        UserDefaults.standard.set(true, forKey: PermissionCenter.filesAskedKey)
         if ["current", "front", "frontmost", "this", "selected"].contains(path.lowercased()) {
             guard let current = await currentDocumentPath() else {
                 throw TESSError("I couldn't tell which document is open. Select the file in Finder, or tell me its name.")

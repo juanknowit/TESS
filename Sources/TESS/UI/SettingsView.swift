@@ -1309,7 +1309,7 @@ private struct PermissionsPage: View {
             row(.speech, "waveform", "Turning your voice into text, on device")
         }
 
-        Card("Seeing & reading", footer: "Screen Recording can't be granted from a pop-up: TESS opens the right page in System Settings — switch TESS on there, then restart TESS. Because TESS isn't signed by a developer, macOS may ask again after each rebuild.") {
+        Card("Seeing & reading", footer: "Screen Recording can't be granted from a pop-up: TESS opens the right page in System Settings — switch TESS on there, then press Restart TESS. TESS is signed with a stable local certificate, so permissions stay granted when you rebuild.") {
             row(.screen, "rectangle.dashed.badge.record", "“What am I looking at?”")
             RowDivider()
             row(.files, "folder", "Reading documents on your Desktop, in Documents and Downloads")
@@ -1393,13 +1393,20 @@ private struct PermissionsPage: View {
                 if state == .granted {
                     Button("Open") { center.openSettings(kind) }
                         .buttonStyle(ThemedButtonStyle())
+                } else if kind == .screen, case .partial = state {
+                    // Switched on in System Settings but not active yet: TESS has to restart.
+                    Button("Open") { center.openSettings(kind) }
+                        .buttonStyle(ThemedButtonStyle())
+                    Button("Restart TESS") { center.relaunch() }
+                        .buttonStyle(ThemedButtonStyle(kind: .primary))
+                        .help("macOS only applies Screen Recording when TESS starts.")
                 } else {
-                    Button(state == .denied ? "Fix" : "Allow") {
+                    Button(state == .notAsked ? "Allow" : "Fix") {
                         Task { await center.request(kind) }
                     }
                     .buttonStyle(ThemedButtonStyle(kind: .primary))
                     .disabled(center.busy)
-                    .help(state == .denied ? "macOS won't ask again — opens System Settings so you can switch TESS on." : "Shows macOS's permission prompt.")
+                    .help(state == .notAsked ? "Shows macOS's permission prompt." : "Opens the System Settings page where you can switch TESS on.")
                 }
             }
         }

@@ -71,7 +71,8 @@ final class PermissionCenter: ObservableObject {
     @Published var needsRestart = false
 
     private var timer: Timer?
-    private static let filesAskedKey = "filesPermissionAsked"
+    nonisolated static let filesAskedKey = "filesPermissionAsked"
+    private static let screenAskedKey = "screenPermissionAsked"
 
     /// Apps TESS sends Apple Events to.
     static let automationTargets: [(bundleID: String, name: String)] = [
@@ -106,12 +107,23 @@ final class PermissionCenter: ObservableObject {
         next[.microphone] = Self.state(AVCaptureDevice.authorizationStatus(for: .audio))
         next[.speech] = {
             switch SFSpeechRecognizer.authorizationStatus() {
-            case .authorized: return .granted
+            case .authorized:
+                // Allowed, but TESS also needs the on-device model that comes with Dictation.
+                let locale = UserDefaults.standard.string(forKey: "recognitionLocale") ?? "en-US"
+                guard let recognizer = SFSpeechRecognizer(locale: Locale(identifier: locale)), recognizer.isAvailable else {
+                    return .partial("Dictation off")
+                }
+                return recognizer.supportsOnDeviceRecognition ? .granted : .partial("Model not downloaded")
             case .notDetermined: return .notAsked
             default: return .denied
             }
         }()
-        next[.screen] = CGPreflightScreenCaptureAccess() ? .granted : .notAsked
+        if CGPreflightScreenCaptureAccess() {
+            next[.screen] = .granted
+        } else {
+            // macOS only re-checks Screen Recording when TESS starts, so after switching it on TESS needs a restart.
+            next[.screen] = UserDefaults.standard.bool(forKey: Self.screenAskedKey) ? .partial("Restart needed?") : .notAsked
+        }
         next[.contacts] = {
             switch CNContactStore.authorizationStatus(for: .contacts) {
             case .authorized: return .granted
@@ -180,40 +192,51 @@ final class PermissionCenter: ObservableObject {
     nonisolated private static func automationState() async -> PermissionState {
         await Task.detached(priority: .utility) {
             let targets = installedTargets()
-            var granted = 0, denied = 0, unknown = 0
+            var granted = 0, denied = 0, notAsked = 0
             for target in targets {
                 switch automationStatus(target.bundleID, ask: false) {
                 case OSStatus(noErr): granted += 1
                 case -1743: denied += 1
-                default: unknown += 1
+                case -1744: notAsked += 1
+                default: break // -600: app isn't running, so macOS can't say yet
                 }
             }
-            if granted == targets.count { return PermissionState.granted }
             if denied > 0 { return PermissionState.partial("\(denied) app\(denied == 1 ? "" : "s") blocked") }
-            if granted == 0 { return PermissionState.notAsked }
-            return PermissionState.partial("\(granted) of \(targets.count) apps")
+            if notAsked > 0 { return granted == 0 ? PermissionState.notAsked : PermissionState.partial("\(granted) of \(granted + notAsked) apps") }
+            // Everything macOS could check is allowed. If nothing could be checked, remember the last setup.
+            if granted > 0 { return PermissionState.granted }
+            return UserDefaults.standard.bool(forKey: "automationSetUp") ? PermissionState.granted : PermissionState.notAsked
         }.value
     }
 
     /// Opens each target quietly in the background if needed, then asks macOS for permission to control it.
     private func requestAutomation() async {
+        var allAllowed = true
         for target in Self.installedTargets() {
             progress = "Asking to control \(target.name)…"
-            await Self.launchHidden(target.bundleID)
-            _ = await Task.detached { Self.automationStatus(target.bundleID, ask: true) }.value
+            let launched = await Self.launchHidden(target.bundleID)
+            let result = await Task.detached { Self.automationStatus(target.bundleID, ask: true) }.value
+            if result != OSStatus(noErr) { allAllowed = false }
+            // Close apps that were only opened to ask the question.
+            if launched {
+                NSRunningApplication.runningApplications(withBundleIdentifier: target.bundleID).forEach { $0.terminate() }
+            }
         }
+        UserDefaults.standard.set(allAllowed, forKey: "automationSetUp")
     }
 
-    nonisolated private static func launchHidden(_ bundleID: String) async {
+    /// Returns true if the app had to be opened.
+    nonisolated private static func launchHidden(_ bundleID: String) async -> Bool {
         let running = await MainActor.run {
             !NSRunningApplication.runningApplications(withBundleIdentifier: bundleID).isEmpty
         }
-        guard !running, let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) else { return }
+        guard !running, let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) else { return false }
         let configuration = NSWorkspace.OpenConfiguration()
         configuration.activates = false
         configuration.hides = true
         _ = try? await NSWorkspace.shared.openApplication(at: url, configuration: configuration)
         try? await Task.sleep(nanoseconds: 1_200_000_000)
+        return true
     }
 
     // MARK: Requesting
@@ -232,7 +255,12 @@ final class PermissionCenter: ObservableObject {
         case .microphone:
             if current == .notAsked { _ = await AVCaptureDevice.requestAccess(for: .audio) } else { openSettings(kind) }
         case .speech:
-            if current == .notAsked {
+            if case .partial = current {
+                // Allowed, but Dictation (and its on-device model) is off: that lives in Keyboard settings.
+                if let url = URL(string: "x-apple.systempreferences:com.apple.Keyboard-Settings.extension") {
+                    NSWorkspace.shared.open(url)
+                }
+            } else if current == .notAsked {
                 _ = await withCheckedContinuation { (c: CheckedContinuation<Bool, Never>) in
                     SFSpeechRecognizer.requestAuthorization { c.resume(returning: $0 == .authorized) }
                 }
@@ -257,6 +285,7 @@ final class PermissionCenter: ObservableObject {
             if case .partial(let detail) = await Self.automationState(), detail.contains("blocked") { openSettings(kind) }
         case .screen:
             if !CGPreflightScreenCaptureAccess() {
+                UserDefaults.standard.set(true, forKey: Self.screenAskedKey)
                 _ = CGRequestScreenCaptureAccess()
                 needsRestart = true
                 openSettings(kind)
