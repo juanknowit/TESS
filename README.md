@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/juanknowit/TESS/actions/workflows/build.yml"><img src="https://github.com/juanknowit/TESS/actions/workflows/build.yml/badge.svg" alt="Build"></a>
+  <a href="https://github.com/juanknowit/TESS/actions/workflows/build.yml"><img src="https://github.com/juanknowit/TESS/actions/workflows/build.yml/badge.svg?branch=main&event=push" alt="Build"></a>
   <img src="https://img.shields.io/badge/macOS-14%2B-black?logo=apple" alt="macOS 14+">
   <img src="https://img.shields.io/badge/Swift-5.9%2B-F05138?logo=swift&logoColor=white" alt="Swift 5.9+">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT license"></a>
