@@ -1,17 +1,54 @@
-# TESS — voice assistant for macOS
+<p align="center">
+  <img src="Resources/AppIcon.png" width="128" alt="TESS icon">
+</p>
+
+<h1 align="center">TESS</h1>
+
+<p align="center">
+  <b>A JARVIS-style voice assistant for macOS.</b><br>
+  Say “Hey Tess” — she listens on-device, thinks with Claude, OpenAI or a local Ollama model, acts on your Mac, and answers out loud.
+</p>
+
+<p align="center">
+  <a href="https://github.com/juanknowit/TESS/actions/workflows/build.yml"><img src="https://github.com/juanknowit/TESS/actions/workflows/build.yml/badge.svg" alt="Build"></a>
+  <img src="https://img.shields.io/badge/macOS-14%2B-black?logo=apple" alt="macOS 14+">
+  <img src="https://img.shields.io/badge/Swift-5.9%2B-F05138?logo=swift&logoColor=white" alt="Swift 5.9+">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT license"></a>
+</p>
+
+---
 
 TESS lives in your menu bar, listens for **“Hey Tess”**, thinks with the AI of your choice (Claude, OpenAI, or a local Ollama model), acts on your Mac, and answers out loud. A glowing HUD orb appears at the top of the screen while she listens, thinks and speaks.
 
-## Build and install
+## Features
 
-Requirements: macOS 14 Sonoma or later, plus Xcode or the Command Line Tools (`xcode-select --install`).
+- **Hands-free** — on-device “Hey Tess” wake word, follow-up questions without repeating it, interrupt her mid-sentence
+- **Your choice of brain** — Claude (with built-in web search), OpenAI, or a private local model through Ollama
+- **Natural voice** — macOS Premium voices or OpenAI's text-to-speech
+- **Mac control** — apps, volume, dark mode, screen lock, file search, screenshots, timers
+- **Your day** — calendar, reminders, weather, local news for your city, and a spoken morning briefing
+- **Sees and reads** — “What am I looking at?”, summarise PDFs and Word documents
+- **Writes for you** — types into any app, sends Messages (always reads them back first), manages Apple Notes
+- **Remembers** — long-term memory you can view and edit
+- **Settings** — dark sidebar settings with usage statistics and one-click permission setup
+
+## Install
+
+### Download a build
+
+Every tagged release has a ready-made `TESS.zip` on the [Releases](https://github.com/juanknowit/TESS/releases) page. TESS isn't notarised, so the first time, right-click the app › **Open**, or run `xattr -dr com.apple.quarantine /Applications/TESS.app`.
+
+### Build from source
+
+Requirements: macOS 14 Sonoma or later, plus Xcode or just the Command Line Tools (`xcode-select --install`).
 
 ```bash
+git clone https://github.com/juanknowit/TESS.git
 cd TESS
 ./build.sh --install     # builds, copies to /Applications and launches
 ```
 
-`./build.sh` alone just builds `build/TESS.app`.
+`./build.sh` alone just builds `build.noindex/TESS.app`.
 
 ## First run
 
@@ -77,23 +114,27 @@ If you rebuild without an Apple Development certificate, macOS may ask again bec
 
 ## Privacy
 
-Speech is transcribed on-device. Only the text of your request (and tool results such as weather data) is sent to the AI provider you chose — or nowhere at all with Ollama. API keys are stored in your login keychain.
+Speech is transcribed on-device. Only the text of your request (and tool results such as weather data, screenshots or document text when you ask for them) is sent to the AI provider you chose — or nowhere at all with Ollama. API keys are stored in your login keychain; usage statistics and memories stay in `~/Library/Application Support/TESS`. See [SECURITY.md](SECURITY.md).
 
 ## Project layout
 
 ```
 Sources/TESS/
   TESSApp.swift          menu bar app entry point
-  Assistant.swift        orchestrates listen → think → speak
+  Assistant.swift        orchestrates listen → think → speak, morning briefing
   Settings.swift         preferences, system prompt, provider factory
+  Memory.swift           long-term memory store and tools
+  Stats.swift            usage statistics
+  Permissions.swift      checking and requesting macOS permissions
   Audio/VoiceListener    microphone, on-device speech recognition, wake word
   Audio/VoiceSpeaker     macOS / OpenAI text-to-speech
   AI/                    Claude, OpenAI/Ollama providers and the tool-calling agent loop
-  Tools/                 Mac control, weather/news/search, calendar & reminders, music
-  UI/                    HUD orb, menu bar panel, settings window
+  Tools/                 Mac control, info & news, calendar, music, screen, documents,
+                         typing, Messages & Notes, briefing
+  UI/                    HUD orb, menu bar panel, theme, settings window
 ```
 
-Adding a skill is one `Tool(...)` in a file under `Tools/`, registered in `ToolRegistry.standard`.
+Adding a skill is one `Tool(...)` in a file under `Tools/`, registered in `ToolRegistry.standard`. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Troubleshooting
 
@@ -101,3 +142,7 @@ Adding a skill is one `Tool(...)` in a file under `Tools/`, registered in `ToolR
 - **“Rejected the API key”** — re-paste the key in Settings › Brain and press Test connection.
 - **“I can’t reach Ollama”** — open the Ollama app or run `ollama serve`.
 - **Spotify search doesn’t auto-play** — Spotify only allows that through its own Web API; TESS opens the search for you. Play/pause/skip work fully.
+
+## License
+
+[MIT](LICENSE) © 2026 Juan Gonzalez

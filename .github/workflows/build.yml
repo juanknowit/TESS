@@ -1,0 +1,43 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write # needed to attach TESS.zip to releases
+
+jobs:
+  build:
+    name: Build TESS.app
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Toolchain
+        run: |
+          sw_vers
+          swift --version
+
+      - name: Build and package
+        run: ./build.sh
+
+      - name: Zip app
+        # ditto keeps the bundle's permissions and structure intact.
+        run: ditto -c -k --keepParent build.noindex/TESS.app TESS.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TESS
+          path: TESS.zip
+          if-no-files-found: error
+
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: TESS.zip
+          generate_release_notes: true
