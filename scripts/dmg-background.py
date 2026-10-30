@@ -63,6 +63,13 @@ for cxv,op in [(310,0.30),(336,0.62),(362,1.0)]:
 glow=a.filter(ImageFilter.GaussianBlur(6*S))
 img.paste(glow,(0,0),glow); img.paste(glow,(0,0),glow); img.paste(a,(0,0),a)
 
+# Name pills: dark, so Finder (which judges the brightness right under each name) draws both names in white.
+p_=layer(); pd=ImageDraw.Draw(p_)
+for (lx,ly),wd in [(ICON,72),(APPS,112)]:
+    pd.rounded_rectangle([(lx-wd/2)*S,(ly+60)*S,(lx+wd/2)*S,(ly+82)*S],radius=11*S,
+                         fill=(7,14,27,235),outline=(70,215,255,70),width=S)
+img.paste(p_,(0,0),p_)
+
 d=ImageDraw.Draw(img)
 import os
 F=os.environ.get("INTER_DIR","/usr/share/fonts/opentype/inter/")

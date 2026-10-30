@@ -17,7 +17,7 @@ icon = defines.get("volume_icon")
 background = defines["background"]
 
 # The background is 640×420 (the window adds a title bar); icon positions are the centres of the icons.
-window_rect = ((200, 140), (640, 440))  # +20 for the title bar
+window_rect = ((200, 140), (640, 453))  # 420 + the 33-point title bar
 default_view = "icon-view"
 show_status_bar = False
 show_tab_view = False
