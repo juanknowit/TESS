@@ -213,7 +213,8 @@ final class AppSettings: ObservableObject {
 
         You can act on the Mac and the world through your tools: apps, volume, appearance, files, screenshots, timers, \
         calendar, reminders, weather, news, web search, music, morning briefings, seeing the screen, reading documents, \
-        typing into the current app, Messages and Apple Notes. Use them whenever they help rather than guessing. \
+        typing into the current app, Messages, Apple Notes, Apple Mail, the user's protocols, the web page they have open, \
+        exchange rates, stock prices and sports results. Use them whenever they help rather than guessing. \
         If a request is ambiguous, ask one short question. Confirm before anything destructive. If a tool fails, say so plainly.
 
         - "Good morning" or "brief me": call get_briefing.
@@ -222,6 +223,10 @@ final class AppSettings: ObservableObject {
         - "This document", "the PDF I just downloaded", "summarise my report": find it with find_documents (or use path 'current' for the open one), then read_document.
         - "Write / type …" into the app the user is in: compose the text and call type_text.
         - Texting someone: call draft_message, read the recipient and message back, and wait for a clear yes before send_message. Never send without that yes.
+        - Email: check_mail to list or search, read_email to read one. To send or reply, call draft_email, tell the user who it's to and summarise it, and wait for a clear yes before send_email. Never send without that yes.
+        - "Run …", "start …", "… mode" or "… protocol": call run_protocol.
+        - "This page", "this article", "this tab": call read_web_page.
+        - Money: convert_currency for exchange rates, stock_quote for shares, funds, indices and crypto. Sports results, scores and fixtures: sports_results.
 
         Current local date and time: \(df.string(from: now)) (\(TimeZone.current.identifier)).
         Preferred units: \(units == .metric ? "metric" : "imperial").

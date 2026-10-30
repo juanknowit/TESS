@@ -92,6 +92,11 @@ final class ToolRegistry {
         registry.add(DocumentTools.all())
         registry.add(TypingTools.all())
         registry.add(CommsTools.all())
+        registry.add(MailTools.all())
+        registry.add(RoutineTools.all(context))
+        registry.add(WebPageTools.all())
+        registry.add(MarketTools.all())
+        registry.add(SportsTools.all())
         return registry
     }
 
@@ -117,6 +122,15 @@ final class ToolRegistry {
         case "send_message": return "Sending…"
         case "create_note", "append_to_note": return "Updating Notes…"
         case "search_notes", "read_note": return "Checking your notes…"
+        case "check_mail", "read_email": return "Checking your mail…"
+        case "draft_email": return "Drafting your email…"
+        case "send_email": return "Sending…"
+        case "run_protocol": return "Running protocol…"
+        case "list_protocols": return "Checking your protocols…"
+        case "read_web_page": return "Reading the page…"
+        case "convert_currency": return "Checking exchange rates…"
+        case "stock_quote": return "Checking the markets…"
+        case "sports_results": return "Checking the scores…"
         default: return "Working on it…"
         }
     }

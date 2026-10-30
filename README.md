@@ -14,6 +14,7 @@
   <img src="https://img.shields.io/badge/macOS-14%2B-black?logo=apple" alt="macOS 14+">
   <img src="https://img.shields.io/badge/Swift-5.9%2B-F05138?logo=swift&logoColor=white" alt="Swift 5.9+">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT license"></a>
+  <a href="https://github.com/juanknowit/TESS/releases"><img src="https://img.shields.io/github/v/release/juanknowit/TESS?include_prereleases&label=download" alt="Latest release"></a>
 </p>
 
 ---
@@ -28,15 +29,25 @@ TESS lives in your menu bar, listens for **“Hey Tess”**, thinks with the AI 
 - **Mac control** — apps, volume, dark mode, screen lock, file search, screenshots, timers
 - **Your day** — calendar, reminders, weather, local news for your city, and a spoken morning briefing
 - **Sees and reads** — “What am I looking at?”, summarise PDFs and Word documents
-- **Writes for you** — types into any app, sends Messages (always reads them back first), manages Apple Notes
-- **Remembers** — long-term memory you can view and edit
-- **Settings** — dark sidebar settings with usage statistics and one-click permission setup
+- **Writes for you** — types into any app, sends Messages and email (always reads them back first), manages Apple Notes
+- **Mail** — “Any new emails?”, read them out, draft replies
+- **Protocols** — your own routines: “Hey Tess, work mode” opens your apps, sets the volume and starts your playlist
+- **Web pages** — “Summarise this page” in Safari, Chrome, Edge, Arc and Brave
+- **Money and sports** — currency conversion, stock and crypto prices, football and US sports scores
+- **Remembers** — long-term memory and a searchable conversation history
+- **Settings** — dark sidebar settings with a Skills guide, usage statistics and one-click permission setup
 
 ## Install
 
-### Download a build
+### Download
 
-Every tagged release has a ready-made `TESS.zip` on the [Releases](https://github.com/juanknowit/TESS/releases) page. TESS isn't notarised, so the first time, right-click the app › **Open**, or run `xattr -dr com.apple.quarantine /Applications/TESS.app`.
+1. Download the latest **TESS-x.y.z.dmg** from [Releases](https://github.com/juanknowit/TESS/releases) and open it.
+2. Drag **TESS** onto the **Applications** folder.
+3. Open TESS from Applications. TESS isn't notarised by Apple yet, so the first time macOS says it can't verify it: click **Done**, open **System Settings › Privacy & Security**, scroll down and click **Open Anyway** next to TESS. You only need to do this once.
+
+Runs on macOS 14 Sonoma or later, on Apple silicon and Intel. To update, quit TESS and drag the new version over the old one. Settings, memory and permissions carry over, because every release is signed with the same certificate.
+
+> TESS is in **beta** (0.9). Expect rough edges, and please [report bugs](https://github.com/juanknowit/TESS/issues/new/choose).
 
 ### Build from source
 
@@ -48,7 +59,7 @@ cd TESS
 ./build.sh --install     # builds, copies to /Applications and launches
 ```
 
-`./build.sh` alone just builds `build.noindex/TESS.app`.
+`./build.sh` alone just builds `build.noindex/TESS.app`. `scripts/make-dmg.sh build.noindex/TESS.app dist/TESS.dmg` packs it into an installer. Releases are built by GitHub Actions; see [RELEASING.md](RELEASING.md).
 
 ## First run
 
@@ -77,6 +88,11 @@ cd TESS
 | Documents | “Summarise the PDF I just downloaded” · “What's the total on this invoice?” · “Read me the open document” |
 | Typing | “Write a reply saying I'll be ten minutes late” — typed wherever your cursor is |
 | Messages | “Text Maria I'm running late” — TESS reads it back and only sends after you say yes |
+| Mail | “Any new emails?” · “Anything from Maria this week?” · “Read me the latest one” · “Reply saying thanks, I'll look tomorrow” |
+| Web pages | “Summarise this page” · “What are the main points of this article?” |
+| Protocols | “Run work mode” · “Wind down” — build your own under Settings › Protocols |
+| Money | “What's 200 dollars in kroner?” · “How is Equinor doing?” · “What's Bitcoin at?” |
+| Sports | “Did Vålerenga win?” · “Premier League scores” · “When do the Lakers play next?” |
 | Notes | “Make a note: call the plumber Monday” · “Add oat milk to my shopping list note” · “What's in my packing note?” |
 | Memory | “Remember that I take my coffee black” · “What do you remember about me?” · “Forget my coffee order” |
 | Conversation | Ask anything. After she answers, just keep talking — no wake word needed for a few seconds. Say “stop” or “that’s all” to end, or “Hey Tess” to interrupt her mid-sentence. |
@@ -90,11 +106,14 @@ Click the menu bar icon › **Settings…**. The window has a searchable sidebar
 - **General** — your name, home city, wake word, follow-ups, personality, music app, launch at login.
 - **Brain** — choose Claude, OpenAI or Ollama, set keys and models, test the connection. Ollama shows whether it's running and which models are installed.
 - **Voice** — macOS voice or OpenAI voice (Marin and Cedar sound most natural).
+- **Skills** — every skill with example phrases, the permissions it needs and a **Try** button.
+- **Protocols** — build routines from steps: open or quit apps, volume, dark mode, music, links, Apple Shortcuts, waits and spoken lines.
 - **Memory** — long-term facts TESS remembers about you. Say “Hey Tess, remember that…”, or add them by hand. Delete any memory, or turn memory off entirely.
+- **History** — your questions and her answers, grouped by day and searchable. Can be switched off.
 - **Usage** — tokens per provider, requests, commands, tools used, a daily trend chart, and TESS's live memory use.
 - **Permissions** and **About**.
 
-Usage statistics and memories are stored only on your Mac in `~/Library/Application Support/TESS`.
+Usage statistics, memories, history and protocols are stored only on your Mac in `~/Library/Application Support/TESS`.
 
 ## Voices
 
@@ -107,12 +126,13 @@ Usage statistics and memories are stored only on your Mac in `~/Library/Applicat
 |---|---|
 | Microphone, Speech Recognition | Wake word and commands |
 | Calendars, Reminders | Reading and adding events/reminders (asked on first use) |
-| Automation | Controlling Music, Spotify, System Events (asked on first use) |
+| Automation | Controlling Mail, Messages, Notes, Music, Spotify, your browser and System Events (asked on first use) |
+| Screen Recording | “What am I looking at?” |
 | Accessibility (optional) | A true screen lock; without it TESS sleeps the display instead |
 
 The easiest way to grant them is **Settings › Permissions › Set up everything**, which walks through each prompt and opens the right System Settings page for Screen Recording and Accessibility.
 
-**Permissions survive rebuilds.** macOS remembers permissions per code signature, so `build.sh` signs TESS with a stable identity: your *Apple Development* certificate if you have one, otherwise a free self-signed **TESS Local Signing** certificate it creates once in your login keychain. The first time, macOS may ask whether `codesign` may use that key: enter your password and choose **Always Allow**. When the signing identity changes, the installer resets TESS’s old permission entries once so you can grant them cleanly.
+**Permissions survive updates and rebuilds.** Downloaded releases are all signed with the same TESS certificate.  macOS remembers permissions per code signature, so `build.sh` signs TESS with a stable identity: your *Apple Development* certificate if you have one, otherwise a free self-signed **TESS Local Signing** certificate it creates once in your login keychain. The first time, macOS may ask whether `codesign` may use that key: enter your password and choose **Always Allow**. When the signing identity changes, the installer resets TESS’s old permission entries once so you can grant them cleanly.
 
 ## Privacy
 
@@ -128,11 +148,14 @@ Sources/TESS/
   Memory.swift           long-term memory store and tools
   Stats.swift            usage statistics
   Permissions.swift      checking and requesting macOS permissions
+  Routines.swift         protocols (user-defined routines)
+  History.swift          conversation history
   Audio/VoiceListener    microphone, on-device speech recognition, wake word
   Audio/VoiceSpeaker     macOS / OpenAI text-to-speech
   AI/                    Claude, OpenAI/Ollama providers and the tool-calling agent loop
   Tools/                 Mac control, info & news, calendar, music, screen, documents,
-                         typing, Messages & Notes, briefing
+                         typing, Messages & Notes, Mail, web pages, markets, sports,
+                         briefing
   UI/                    HUD orb, menu bar panel, theme, settings window
 ```
 
@@ -143,8 +166,10 @@ Adding a skill is one `Tool(...)` in a file under `Tools/`, registered in `ToolR
 - **She never hears “Hey Tess”** — check Dictation is on, and the right language is chosen in Settings › General. Try the menu bar’s *Talk now* to confirm the mic works.
 - **“Rejected the API key”** — re-paste the key in Settings › Brain and press Test connection.
 - **“I can’t reach Ollama”** — open the Ollama app or run `ollama serve`.
+- **“Apple could not verify TESS”** — see step 3 under [Download](#download). Or, in Terminal: `xattr -dr com.apple.quarantine /Applications/TESS.app`.
+- **Web pages you're logged in to come back empty** — in Safari turn on Develop › Allow JavaScript from Apple Events (Chrome, Edge, Brave: View › Developer › Allow JavaScript from Apple Events).
 - **Spotify search doesn’t auto-play** — Spotify only allows that through its own Web API; TESS opens the search for you. Play/pause/skip work fully.
 
 ## License
 
-[MIT](LICENSE) © 2026 Juan Gonzalez
+[MIT](LICENSE) © 2026 Juan Gonzalez. Exchange rates by [Exchange Rate API](https://www.exchangerate-api.com).

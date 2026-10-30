@@ -19,9 +19,11 @@
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.0</string>
+    <string>0.9.0</string>
     <key>CFBundleVersion</key>
     <string>1</string>
+    <key>TESSDisplayVersion</key>
+    <string>0.9.0 beta</string>
     <key>LSMinimumSystemVersion</key>
     <string>14.0</string>
     <key>LSUIElement</key>
@@ -48,7 +50,7 @@
     <key>NSRemindersUsageDescription</key>
     <string>TESS reads, creates and completes reminders when you ask.</string>
     <key>NSAppleEventsUsageDescription</key>
-    <string>TESS controls Messages, Notes, Music, Spotify and system settings when you ask it to.</string>
+    <string>TESS controls Mail, Messages, Notes, Music, Spotify, your web browser and system settings when you ask it to.</string>
     <key>NSContactsUsageDescription</key>
     <string>TESS looks up who you want to message.</string>
     <key>NSDesktopFolderUsageDescription</key>

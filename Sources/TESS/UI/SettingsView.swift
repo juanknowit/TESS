@@ -12,7 +12,7 @@ import SwiftUI
 // View-local state lives in `UIState.shared`.
 
 enum SettingsPane: String, CaseIterable, Identifiable {
-    case general, brain, voice, memory, usage, permissions, about
+    case general, brain, voice, skills, routines, memory, history, usage, permissions, about
     var id: String { rawValue }
 
     var title: String {
@@ -20,7 +20,10 @@ enum SettingsPane: String, CaseIterable, Identifiable {
         case .general: return "General"
         case .brain: return "Brain"
         case .voice: return "Voice"
+        case .skills: return "Skills"
+        case .routines: return "Protocols"
         case .memory: return "Memory"
+        case .history: return "History"
         case .usage: return "Usage"
         case .permissions: return "Permissions"
         case .about: return "About"
@@ -32,7 +35,10 @@ enum SettingsPane: String, CaseIterable, Identifiable {
         case .general: return "gearshape"
         case .brain: return "brain.head.profile"
         case .voice: return "waveform"
+        case .skills: return "sparkles"
+        case .routines: return "bolt.circle"
         case .memory: return "bookmark"
+        case .history: return "clock.arrow.circlepath"
         case .usage: return "chart.xyaxis.line"
         case .permissions: return "lock.shield"
         case .about: return "info.circle"
@@ -42,7 +48,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
     var section: String {
         switch self {
         case .general, .brain, .voice: return "Essentials"
-        case .memory, .usage: return "Assistant"
+        case .skills, .routines, .memory, .history, .usage: return "Assistant"
         case .permissions, .about: return "System"
         }
     }
@@ -52,7 +58,10 @@ enum SettingsPane: String, CaseIterable, Identifiable {
         case .general: return "name city units wake word language follow-up greeting chimes personality music news login startup morning briefing"
         case .brain: return "ai provider claude openai ollama model api key web search local test connection"
         case .voice: return "speech tts speak voice rate speed openai marin cedar test"
-        case .memory: return "remember forget facts conversation history"
+        case .skills: return "skills examples help what can tess do commands mail web page currency stocks sports music weather news calendar notes messages screen documents typing"
+        case .routines: return "protocols routines work mode wind down shortcuts automation steps"
+        case .memory: return "remember forget facts"
+        case .history: return "history conversations log past questions answers"
         case .usage: return "stats statistics tokens requests commands tools chart ram memory"
         case .permissions: return "microphone speech calendar reminders accessibility automation privacy screen recording contacts files"
         case .about: return "version data folder"
@@ -166,7 +175,10 @@ struct SettingsRoot: View {
         case .general: GeneralPage()
         case .brain: BrainPage()
         case .voice: VoicePage()
+        case .skills: SkillsPage()
+        case .routines: RoutinesPage()
         case .memory: MemoryPage()
+        case .history: HistoryPage()
         case .usage: UsagePage()
         case .permissions: PermissionsPage()
         case .about: AboutPage()
@@ -1157,6 +1169,9 @@ private struct UsagePage: View {
             "read_document": "Read document", "type_text": "Type for you", "draft_message": "Draft message",
             "send_message": "Send message", "create_note": "New note", "append_to_note": "Add to note",
             "search_notes": "Search notes", "read_note": "Read note",
+            "check_mail": "Check mail", "read_email": "Read email", "draft_email": "Draft email", "send_email": "Send email",
+            "run_protocol": "Run protocol", "list_protocols": "List protocols", "read_web_page": "Read web page",
+            "convert_currency": "Currency", "stock_quote": "Stock quote", "sports_results": "Sports",
         ]
         return names[tool] ?? tool.replacingOccurrences(of: "_", with: " ").capitalized
     }
@@ -1323,10 +1338,10 @@ private struct PermissionsPage: View {
             row(.reminders, "checklist", "Reading, adding and completing reminders")
         }
 
-        Card("Control", footer: "Automation briefly opens Notes, Messages, Music and Spotify in the background so macOS can ask about each one. TESS then appears in System Settings › Automation.") {
+        Card("Control", footer: "Automation briefly opens Mail, Notes, Messages, Music, Spotify and your browsers in the background so macOS can ask about each one, then closes them again. TESS then appears in System Settings › Automation.") {
             row(.accessibility, "lock", "Typing for you, reading the open document, and screen lock")
             RowDivider()
-            row(.automation, "gearshape.2", "Controlling Messages, Notes, Music, Spotify, Finder and System Events")
+            row(.automation, "gearshape.2", "Controlling Mail, Messages, Notes, Music, Spotify, your browser, Finder and System Events")
         }
         .onAppear { center.startMonitoring() }
         .onDisappear { center.stopMonitoring() }
@@ -1417,7 +1432,8 @@ private struct PermissionsPage: View {
 
 private struct AboutPage: View {
     private var version: String {
-        let short = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
+        let short = Bundle.main.object(forInfoDictionaryKey: "TESSDisplayVersion") as? String
+            ?? Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0.9.0"
         let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "1"
         return "Version \(short) (\(build))"
     }
