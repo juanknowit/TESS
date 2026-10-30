@@ -5,12 +5,11 @@ import os.path
 app = defines["app"]
 app_name = os.path.basename(app)
 
-format = "ULFO"            # LZFSE-compressed, read-only (macOS 10.11+)
+# make-dmg.sh builds read-write first (to adjust the label colour), then compresses to ULFO.
+format = defines.get("format", "ULFO")
 filesystem = "HFS+"
 files = [app]
-# The Applications shortcut has a blank name: its label is painted into the background in white,
-# so it looks the same in Light and Dark Mode (Finder would draw it black in Light Mode).
-applications = " "
+applications = "Applications"
 symlinks = {applications: "/Applications"}
 hide_extension = [app_name]
 

@@ -74,9 +74,6 @@ def center(t,f,y,fill):
     tw=d.textlength(t,font=f); d.text(((w-tw)/2,y),t,font=f,fill=fill)
 center("Install TESS",title,40*S,(240,248,255))
 center("Drag TESS onto the Applications folder",sub,80*S,(150,180,205))
-label=ImageFont.truetype(F+"Inter-Medium.otf",13*S)
-tw=d.textlength("Applications",font=label)
-d.text((APPS[0]*S-tw/2,(APPS[1]+62)*S),"Applications",font=label,fill=(240,248,255))
 y=350*S
 center("First launch: if macOS says it can’t verify TESS, open",small,y,(120,145,170))
 parts=[("System Settings › Privacy & Security",smallb),(" and click ",small),("Open Anyway",smallb)]
