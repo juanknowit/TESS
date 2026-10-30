@@ -34,7 +34,7 @@ python3 -m dmgbuild -s scripts/dmg-settings.py \
 
 # Give the window a navy background colour behind the picture, so Finder draws the names in white.
 MOUNT="$(hdiutil attach "$TMP/installer.dmg" -nobrowse -noautoopen -plist \
-  | python3 -c 'import plistlib,sys; print(next(e["mount-point"] for e in plistlib.load(sys.stdin.buffer)["system-entities"] if "mount-point" in e))')"
+  | python3 -c 'import plistlib,sys; print(next(e["mount-point"] for e in plistlib.loads(sys.stdin.buffer.read())["system-entities"] if "mount-point" in e))')"
 python3 scripts/dmg-label-color.py "$MOUNT/.DS_Store"
 rm -rf "$MOUNT/.fseventsd"
 hdiutil detach "$MOUNT" -quiet || hdiutil detach "$MOUNT" -force -quiet
