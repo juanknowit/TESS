@@ -4,6 +4,15 @@ All notable changes to TESS are listed here. The format follows [Keep a Changelo
 
 ## [Unreleased]
 
+## [0.9.2-beta] — 2026-10-30
+
+### Changed
+- Installer: the names under TESS and Applications now sit on light pills, so they match and are easy to read (Finder always draws them in dark text on the installer's picture background, whatever the Mac's appearance)
+- Installer window opens tall enough to show the whole artwork
+
+### Fixed
+- The installer script works with the Python that comes with Apple's Command Line Tools (3.9)
+
 ## [0.9.1-beta] — 2026-10-30
 
 ### Added
@@ -59,6 +68,7 @@ First public beta.
 - Every release is signed with the same certificate, so permissions survive updates
 - `build.sh` builds and installs with only the Command Line Tools, signing with a stable local identity
 
-[Unreleased]: https://github.com/juanknowit/TESS/compare/v0.9.1-beta...HEAD
+[Unreleased]: https://github.com/juanknowit/TESS/compare/v0.9.2-beta...HEAD
+[0.9.2-beta]: https://github.com/juanknowit/TESS/compare/v0.9.1-beta...v0.9.2-beta
 [0.9.1-beta]: https://github.com/juanknowit/TESS/compare/v0.9.0-beta...v0.9.1-beta
 [0.9.0-beta]: https://github.com/juanknowit/TESS/releases/tag/v0.9.0-beta

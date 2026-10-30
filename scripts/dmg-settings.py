@@ -5,10 +5,11 @@ import os.path
 app = defines["app"]
 app_name = os.path.basename(app)
 
-# make-dmg.sh builds read-write first (to adjust the label colour), then compresses to ULFO.
-format = defines.get("format", "ULFO")
+format = "ULFO"            # LZFSE-compressed, read-only (macOS 10.11+)
 filesystem = "HFS+"
 files = [app]
+# Finder draws icon names in dark text on a picture background (in Light and Dark Mode), so the
+# artwork puts a light pill under each name. See scripts/dmg-background.py.
 applications = "Applications"
 symlinks = {applications: "/Applications"}
 hide_extension = [app_name]
@@ -17,7 +18,7 @@ icon = defines.get("volume_icon")
 background = defines["background"]
 
 # The background is 640×420 (the window adds a title bar); icon positions are the centres of the icons.
-window_rect = ((200, 140), (640, 440))  # +20 for the title bar
+window_rect = ((200, 140), (640, 453))  # 420 + the 33-point title bar
 default_view = "icon-view"
 show_status_bar = False
 show_tab_view = False
