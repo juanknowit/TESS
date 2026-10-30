@@ -6,21 +6,19 @@ Releases are built and published by GitHub Actions ([`.github/workflows/build.ym
 
 1. Set the version in `Resources/Info.plist`: `CFBundleShortVersionString` (numbers only, e.g. `0.9.1`) and `TESSDisplayVersion` (what About shows, e.g. `0.9.1 beta`).
 2. In `CHANGELOG.md`, move the items under **[Unreleased]** into a new section, `## [0.9.1-beta] — YYYY-MM-DD`, and update the links at the bottom.
-3. Commit, merge to `main`, then tag and push:
-
-   ```bash
-   git tag v0.9.1-beta
-   git push origin v0.9.1-beta
-   ```
+3. Commit and merge to `main`.
+4. Publish, in either of two ways:
+   - **From GitHub:** Actions › **Build** › **Run workflow**, type the version (e.g. `0.9.1-beta`) in *Publish a release with this version*, and press **Run workflow**. The workflow creates the `v0.9.1-beta` tag itself.
+   - **From the command line:** `git tag v0.9.1-beta && git push origin v0.9.1-beta`
 
 The workflow then:
 
-- builds a universal (Apple silicon + Intel) `TESS.app` stamped with the tag's version and the run number as build number
+- builds a universal (Apple silicon + Intel) `TESS.app` stamped with the version and the run number as build number
 - signs it (see below)
 - packs `TESS-<version>.dmg` (drag-to-Applications installer), `TESS-<version>.zip` and `SHA256SUMS.txt`
 - publishes a GitHub release named **TESS 0.9.1 beta**, with notes taken from that version's CHANGELOG section plus install instructions
 
-Tags containing a `-` (`v0.9.1-beta`, `v1.0.0-rc.1`) are published as **pre-releases**. A plain tag like `v1.0.0` is a full release.
+Versions containing a `-` (`v0.9.1-beta`, `v1.0.0-rc.1`) are published as **pre-releases**. A plain tag like `v1.0.0` is a full release.
 
 ## Signing
 
