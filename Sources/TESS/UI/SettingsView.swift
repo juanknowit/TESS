@@ -1325,7 +1325,7 @@ private struct PermissionsPage: View {
                 SettingRow("arrow.clockwise", "Restart TESS to finish",
                            subtitle: "Screen Recording takes effect after TESS restarts. Switch TESS on in System Settings first.",
                            tint: Theme.orange) {
-                    Button("Restart TESS") { center.relaunch() }
+                    Button("Restart \(AppFlavor.current.appName)") { center.relaunch() }
                         .buttonStyle(ThemedButtonStyle(kind: .primary))
                 }
             }
@@ -1337,7 +1337,7 @@ private struct PermissionsPage: View {
             row(.speech, "waveform", "Turning your voice into text, on device")
         }
 
-        Card("Seeing & reading", footer: "Screen Recording can't be granted from a pop-up: \(AppFlavor.current.appName) opens the right page in System Settings — switch \(AppFlavor.current.appName) on there, then press Restart. Permissions stay granted when \(AppFlavor.current.appName) is updated or rebuilt.") {
+        Card("Seeing & reading", footer: "Screen Recording can't be granted from a pop-up: \(AppFlavor.current.appName) opens the right page in System Settings — switch \(AppFlavor.current.appName) on there, then press Restart. If it isn't in the list, press + below the list and choose \(AppFlavor.current.appName) from Applications. Permissions stay granted when \(AppFlavor.current.appName) is updated or rebuilt.") {
             row(.screen, "rectangle.dashed.badge.record", "“What am I looking at?”")
             RowDivider()
             row(.files, "folder", "Reading documents on your Desktop, in Documents and Downloads")
@@ -1425,7 +1425,7 @@ private struct PermissionsPage: View {
                     // Switched on in System Settings but not active yet: TESS has to restart.
                     Button("Open") { center.openSettings(kind) }
                         .buttonStyle(ThemedButtonStyle())
-                    Button("Restart TESS") { center.relaunch() }
+                    Button("Restart \(AppFlavor.current.appName)") { center.relaunch() }
                         .buttonStyle(ThemedButtonStyle(kind: .primary))
                         .help("macOS only applies Screen Recording when TESS starts.")
                 } else {
