@@ -1305,9 +1305,18 @@ private struct RangeTabs: View {
 
 private struct PermissionsPage: View {
     @ObservedObject private var center = PermissionCenter.shared
+    @EnvironmentObject var settings: AppSettings
+
+    private var automationFooter: String {
+        var text = "Automation opens Mail, Notes, Messages, Music, Spotify and your browsers in the background if needed, so macOS can ask about each one, then closes them again. \(AppFlavor.current.appName) then appears in System Settings › Automation."
+        if !center.automationUnanswered.isEmpty {
+            text = "macOS didn't show its question for \(center.automationUnanswered.joined(separator: ", ")). Open those apps yourself, then press Allow on Automation to try again. " + text
+        }
+        return text
+    }
 
     var body: some View {
-        PageHeader("Permissions", "What macOS lets TESS do. Press Allow to get each prompt, or set everything up in one go.")
+        PageHeader("Permissions", "What macOS lets \(AppFlavor.current.appName) do. Press Allow to get each prompt, or set everything up in one go.")
 
         setupCard
 
@@ -1323,12 +1332,12 @@ private struct PermissionsPage: View {
         }
 
         Card("Listening", footer: "Speech recognition also needs Dictation turned on in System Settings › Keyboard › Dictation, which downloads the on-device language model.") {
-            row(.microphone, "mic", "Hearing “Hey Tess” and your requests")
+            row(.microphone, "mic", "Hearing “Hey \(settings.wakeName.trimmed.isEmpty ? AppFlavor.current.defaultWakeName : settings.wakeName.trimmed)” and your requests")
             RowDivider()
             row(.speech, "waveform", "Turning your voice into text, on device")
         }
 
-        Card("Seeing & reading", footer: "Screen Recording can't be granted from a pop-up: TESS opens the right page in System Settings — switch TESS on there, then press Restart TESS. TESS is signed with a stable local certificate, so permissions stay granted when you rebuild.") {
+        Card("Seeing & reading", footer: "Screen Recording can't be granted from a pop-up: \(AppFlavor.current.appName) opens the right page in System Settings — switch \(AppFlavor.current.appName) on there, then press Restart. Permissions stay granted when \(AppFlavor.current.appName) is updated or rebuilt.") {
             row(.screen, "rectangle.dashed.badge.record", "“What am I looking at?”")
             RowDivider()
             row(.files, "folder", "Reading documents on your Desktop, in Documents and Downloads")
@@ -1342,7 +1351,7 @@ private struct PermissionsPage: View {
             row(.reminders, "checklist", "Reading, adding and completing reminders")
         }
 
-        Card("Control", footer: "Automation briefly opens Mail, Notes, Messages, Music, Spotify and your browsers in the background so macOS can ask about each one, then closes them again. TESS then appears in System Settings › Automation.") {
+        Card("Control", footer: automationFooter) {
             row(.accessibility, "lock", "Typing for you, reading the open document, and screen lock")
             RowDivider()
             row(.automation, "gearshape.2", "Controlling Mail, Messages, Notes, Music, Spotify, your browser, Finder and System Events")
@@ -1368,12 +1377,12 @@ private struct PermissionsPage: View {
             .frame(width: 58, height: 58)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(center.allGranted ? "All set" : "Set up TESS's permissions")
+                Text(center.allGranted ? "All set" : "Set up \(AppFlavor.current.appName)'s permissions")
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(Theme.text)
                 Text(center.busy && !center.progress.isEmpty ? center.progress :
-                        center.allGranted ? "TESS can use every skill." :
-                        "Goes through each one: answer macOS's prompts as they appear. Screen Recording and Accessibility need a switch in System Settings — TESS opens the page for you.")
+                        center.allGranted ? "\(AppFlavor.current.appName) can use every skill." :
+                        "Goes through each one: answer macOS's prompts as they appear. Screen Recording and Accessibility need a switch in System Settings — \(AppFlavor.current.appName) opens the page for you.")
                     .font(.system(size: 12))
                     .foregroundStyle(Theme.secondary)
                     .fixedSize(horizontal: false, vertical: true)

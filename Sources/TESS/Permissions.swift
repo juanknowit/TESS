@@ -69,6 +69,11 @@ final class PermissionCenter: ObservableObject {
     @Published private(set) var progress = ""
     /// Screen Recording only takes effect after TESS restarts.
     @Published var needsRestart = false
+    /// Apps macOS didn't ask about during the last Automation setup (it never showed the question in time).
+    @Published private(set) var automationUnanswered: [String] = []
+
+    /// How long to wait for the user to answer macOS's "control this app" question before moving on.
+    nonisolated static let automationAskTimeout: TimeInterval = 45
 
     private var timer: Timer?
     nonisolated static let filesAskedKey = "filesPermissionAsked"
@@ -216,22 +221,50 @@ final class PermissionCenter: ObservableObject {
     }
 
     /// Opens each target quietly in the background if needed, then asks macOS for permission to control it.
+    /// Never waits forever: if macOS doesn't answer in time, TESS moves on and lists the app afterwards.
     private func requestAutomation() async {
         var allAllowed = true
+        var unanswered: [String] = []
         for target in Self.installedTargets() {
             progress = "Asking to control \(target.name)…"
+            // Already answered? macOS says so at once, without a prompt.
+            switch await Self.automationStatus(target.bundleID, ask: false, timeout: 5) {
+            case OSStatus(noErr)?: continue
+            case -1743?: allAllowed = false; continue // blocked: only System Settings can change it
+            default: break
+            }
             let launched = await Self.launchHidden(target.bundleID)
-            let result = await Task.detached { Self.automationStatus(target.bundleID, ask: true) }.value
+            // Bring TESS forward so macOS shows its question in front of everything.
+            NSApp.activate(ignoringOtherApps: true)
+            let result = await Self.automationStatus(target.bundleID, ask: true, timeout: Self.automationAskTimeout)
             if result != OSStatus(noErr) { allAllowed = false }
+            if result == nil { unanswered.append(target.name) }
             // Close apps that were only opened to ask the question.
             if launched {
                 NSRunningApplication.runningApplications(withBundleIdentifier: target.bundleID).forEach { $0.terminate() }
             }
         }
+        automationUnanswered = unanswered
         UserDefaults.standard.set(allAllowed, forKey: "automationSetUp")
     }
 
-    /// Returns true if the app had to be opened.
+    /// Asks macOS about one app on a thread of its own, giving up after `timeout` seconds (returns nil).
+    /// macOS's call can block indefinitely when its question never appears.
+    nonisolated private static func automationStatus(_ bundleID: String, ask: Bool, timeout: TimeInterval) async -> OSStatus? {
+        await withCheckedContinuation { (continuation: CheckedContinuation<OSStatus?, Never>) in
+            let once = ResumeOnce()
+            DispatchQueue.global(qos: .userInitiated).async {
+                let status = automationStatus(bundleID, ask: ask)
+                if once.claim() { continuation.resume(returning: status) }
+            }
+            DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + timeout) {
+                if once.claim() { continuation.resume(returning: nil) }
+            }
+        }
+    }
+
+    /// Returns true if the app had to be opened. Waits until it has finished launching (Spotify and
+    /// browsers can take several seconds): macOS can't ask about an app that's still starting up.
     nonisolated private static func launchHidden(_ bundleID: String) async -> Bool {
         let running = await MainActor.run {
             !NSRunningApplication.runningApplications(withBundleIdentifier: bundleID).isEmpty
@@ -240,8 +273,13 @@ final class PermissionCenter: ObservableObject {
         let configuration = NSWorkspace.OpenConfiguration()
         configuration.activates = false
         configuration.hides = true
-        _ = try? await NSWorkspace.shared.openApplication(at: url, configuration: configuration)
-        try? await Task.sleep(nanoseconds: 1_200_000_000)
+        guard let app = try? await NSWorkspace.shared.openApplication(at: url, configuration: configuration) else { return false }
+        var waited = 0
+        while !app.isFinishedLaunching && waited < 60 { // up to 15 seconds
+            try? await Task.sleep(nanoseconds: 250_000_000)
+            waited += 1
+        }
+        try? await Task.sleep(nanoseconds: 700_000_000)
         return true
     }
 
@@ -335,5 +373,19 @@ final class PermissionCenter: ObservableObject {
         process.arguments = ["-c", "sleep 1; open '\(path)'"]
         try? process.run()
         NSApp.terminate(nil)
+    }
+}
+
+/// Lets exactly one of several racing callbacks resume a continuation.
+final class ResumeOnce: @unchecked Sendable {
+    private let lock = NSLock()
+    private var claimed = false
+
+    func claim() -> Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        if claimed { return false }
+        claimed = true
+        return true
     }
 }
