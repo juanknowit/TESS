@@ -46,7 +46,13 @@ jobs:
       - name: Run tests
         run: |
           set -o pipefail
-          swift test 2>&1 | tee test.log
+          if ! swift test 2>&1 | tee test.log; then
+            # Surface compiler errors and failed assertions as annotations on the run.
+            grep -E "error:|failed \(" test.log | sed -E 's/\x1b\[[0-9;]*m//g' | sort -u | head -40 | while IFS= read -r line; do
+              echo "::error::${line}"
+            done
+            exit 1
+          fi
           SUMMARY="$(grep -E "Executed [0-9]+ tests?" test.log | tail -1 | sed -E 's/^[[:space:]]+//')"
           echo "::notice title=Tests::${SUMMARY:-no test summary found}"
 
