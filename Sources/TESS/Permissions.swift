@@ -228,11 +228,9 @@ final class PermissionCenter: ObservableObject {
         for target in Self.installedTargets() {
             progress = "Asking to control \(target.name)…"
             // Already answered? macOS says so at once, without a prompt.
-            switch await Self.automationStatus(target.bundleID, ask: false, timeout: 5) {
-            case OSStatus(noErr)?: continue
-            case -1743?: allAllowed = false; continue // blocked: only System Settings can change it
-            default: break
-            }
+            let known = await Self.automationStatus(target.bundleID, ask: false, timeout: 5)
+            if known == OSStatus(noErr) { continue }
+            if known == OSStatus(-1743) { allAllowed = false; continue } // blocked: only System Settings can change it
             let launched = await Self.launchHidden(target.bundleID)
             // Bring TESS forward so macOS shows its question in front of everything.
             NSApp.activate(ignoringOtherApps: true)
