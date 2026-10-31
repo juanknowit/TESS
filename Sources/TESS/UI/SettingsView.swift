@@ -117,7 +117,7 @@ final class SettingsWindow {
                 .environmentObject(assistant.meter)
             let host = NSHostingController(rootView: root)
             let w = NSWindow(contentViewController: host)
-            w.title = "TESS Settings"
+            w.title = "\(AppFlavor.current.appName) Settings"
             w.styleMask = [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView]
             w.titlebarAppearsTransparent = true
             w.titleVisibility = .hidden
@@ -301,7 +301,7 @@ private struct SettingsSidebar: View {
             OrbView(phase: assistant.phase, level: 0)
                 .frame(width: 30, height: 30)
             VStack(alignment: .leading, spacing: 1) {
-                Text("TESS")
+                Text(AppFlavor.current.appName)
                     .font(.system(size: 12.5, weight: .semibold))
                     .foregroundStyle(Theme.text)
                 Text("\(settings.provider.shortName) · \(settings.activeModel)")
@@ -1442,6 +1442,9 @@ private struct AboutPage: View {
         let short = Bundle.main.object(forInfoDictionaryKey: "TESSDisplayVersion") as? String
             ?? Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0.9.0"
         let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "1"
+        if AppFlavor.current.isDev {
+            return "Version \(short) (\(build)) · development build" + (AppFlavor.buildCommit.map { " from \($0)" } ?? "")
+        }
         return "Version \(short) (\(build))"
     }
 
@@ -1451,7 +1454,7 @@ private struct AboutPage: View {
                 .resizable()
                 .frame(width: 84, height: 84)
             VStack(alignment: .leading, spacing: 4) {
-                Text("TESS")
+                Text(AppFlavor.current.appName)
                     .font(.system(size: 26, weight: .bold))
                     .foregroundStyle(Theme.text)
                 Text("Your voice assistant for macOS")
@@ -1462,18 +1465,20 @@ private struct AboutPage: View {
                     .foregroundStyle(Theme.tertiary)
             }
             Spacer()
-            Button {
-                ui.settingsPane = .updates
-                Task { await updater.check(userInitiated: true) }
-            } label: {
-                Label("Check for updates", systemImage: "arrow.down.circle")
+            if AppFlavor.current.checksForUpdates {
+                Button {
+                    ui.settingsPane = .updates
+                    Task { await updater.check(userInitiated: true) }
+                } label: {
+                    Label("Check for updates", systemImage: "arrow.down.circle")
+                }
+                .buttonStyle(ThemedButtonStyle())
             }
-            .buttonStyle(ThemedButtonStyle())
         }
         .padding(.top, 8)
 
         Card("Your data", footer: "Usage statistics and long-term memories are stored only on this Mac. API keys live in your keychain.") {
-            SettingRow("folder", "Data folder", subtitle: "~/Library/Application Support/TESS") {
+            SettingRow("folder", "Data folder", subtitle: "~/Library/Application Support/\(AppFlavor.current.supportFolderName)") {
                 Button("Show in Finder") { NSWorkspace.shared.open(AppPaths.directory) }
                     .buttonStyle(ThemedButtonStyle())
             }

@@ -15,6 +15,27 @@ struct UpdatesPage: View {
     }
 
     var body: some View {
+        if AppFlavor.current.isDev {
+            devBody
+        } else {
+            releaseBody
+        }
+    }
+
+    /// TESS Dev never updates itself: it's rebuilt from source.
+    @ViewBuilder private var devBody: some View {
+        PageHeader("Updates", "This is TESS Dev, a development build. It doesn't check GitHub for updates.")
+        Card {
+            SettingRow("hammer", "TESS Dev \(updater.currentVersion.displayName)",
+                       subtitle: "Build \(updater.currentBuild)" + (AppFlavor.buildCommit.map { " from commit \($0)" } ?? "")
+                           + ". To update it, run Build TESS.command. Your everyday TESS updates itself from GitHub.",
+                       tint: Theme.orange) {
+                EmptyView()
+            }
+        }
+    }
+
+    @ViewBuilder private var releaseBody: some View {
         PageHeader("Updates", "TESS checks GitHub for new versions and installs them for you.") {
             Button {
                 Task { await updater.check(userInitiated: true) }

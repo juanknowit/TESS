@@ -171,12 +171,13 @@ final class UsageStore: ObservableObject {
     }
 }
 
-/// Where TESS keeps its own files: ~/Library/Application Support/TESS
+/// Where TESS keeps its own files: ~/Library/Application Support/TESS (TESS Dev: …/TESS Dev).
+/// Every file TESS writes for itself must live in here.
 enum AppPaths {
     static let directory: URL = {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
             ?? URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent("Library/Application Support")
-        let dir = base.appendingPathComponent("TESS", isDirectory: true)
+        let dir = AppFlavor.current.supportDirectory(in: base)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir
     }()

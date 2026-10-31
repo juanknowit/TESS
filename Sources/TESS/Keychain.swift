@@ -7,7 +7,8 @@ import Security
 /// key …" per item whenever the app's signature is new to it (after each install or update, until TESS
 /// is signed with an Apple Developer ID), so one item means at most one prompt.
 enum Keychain {
-    static let service = "app.tess.assistant"
+    /// "app.tess.assistant" for TESS, "app.tess.assistant.dev" for TESS Dev (see `AppFlavor`).
+    static let service = AppFlavor.current.keychainService
     private static let bundleAccount = "api-keys"
     /// Older versions stored one item per key.
     private static let legacyAccounts = ["anthropic", "openai"]

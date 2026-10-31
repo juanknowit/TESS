@@ -146,6 +146,7 @@ final class Updater: ObservableObject {
 
     /// Starts checking in the background: shortly after launch and then every few hours.
     func start() {
+        guard AppFlavor.current.checksForUpdates else { return }
         scheduleChecks()
         guard automaticChecks else { return }
         Task {
@@ -157,7 +158,7 @@ final class Updater: ObservableObject {
     private func scheduleChecks() {
         timer?.invalidate()
         timer = nil
-        guard automaticChecks else { return }
+        guard automaticChecks, AppFlavor.current.checksForUpdates else { return }
         timer = Timer.scheduledTimer(withTimeInterval: Self.interval, repeats: true) { _ in
             Task { @MainActor in await Updater.shared.check(userInitiated: false) }
         }
@@ -165,7 +166,7 @@ final class Updater: ObservableObject {
 
     /// Looks for a newer release. Automatic checks only prompt for versions you haven't skipped.
     func check(userInitiated: Bool) async {
-        guard !isBusy else { return }
+        guard !isBusy, AppFlavor.current.checksForUpdates else { return }
         phase = .checking
         do {
             let release = try await Self.newestRelease(includeBetas: includeBetas)
@@ -240,7 +241,7 @@ final class Updater: ObservableObject {
 
     /// Downloads the release, checks it, swaps it into place and relaunches TESS.
     func install(_ release: Release) async {
-        guard !isBusy else { return }
+        guard !isBusy, AppFlavor.current.checksForUpdates else { return }
         phase = .downloading(release, 0)
         do {
             let dmg = try await download(release) { fraction in
