@@ -7,6 +7,7 @@ All notable changes to TESS are listed here. The format follows [Keep a Changelo
 ### Fixed
 - Permission setup no longer gets stuck on "Asking to control Spotify…" (or System Events): TESS waits until each app has really opened, brings its own window forward so macOS's question is visible, and moves on after 45 seconds, listing any apps macOS didn't ask about
 - Permission texts use the app's own name and wake word (TESS Dev says "Hey Dev")
+- Screen Recording: TESS makes sure it appears in System Settings › Screen & System Audio Recording after asking, and the page explains the + button if it still isn't listed
 
 ### Development
 - `build.sh --dev` builds **TESS Dev**, a separate app for local testing with its own bundle ID, settings, data folder, keychain item, permissions and icon. It wakes to "Hey Dev", starts with the morning briefing off, never checks for updates, and its install step only ever touches TESS Dev

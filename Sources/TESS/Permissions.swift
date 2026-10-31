@@ -4,6 +4,7 @@ import AVFoundation
 import Contacts
 import CoreGraphics
 import EventKit
+import ScreenCaptureKit
 import Speech
 
 enum PermissionKind: String, CaseIterable, Identifiable {
@@ -329,6 +330,10 @@ final class PermissionCenter: ObservableObject {
             if !CGPreflightScreenCaptureAccess() {
                 UserDefaults.standard.set(true, forKey: Self.screenAskedKey)
                 _ = CGRequestScreenCaptureAccess()
+                // macOS sometimes records the request without adding the app to the Screen Recording list
+                // (notably after its permissions were reset). Asking ScreenCaptureKit for the screen's
+                // contents makes it register the app, so the switch appears in System Settings.
+                _ = try? await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
                 needsRestart = true
                 openSettings(kind)
             }
