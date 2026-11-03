@@ -52,11 +52,20 @@ final class Assistant: ObservableObject {
             return
         }
         startListening()
+        loadDataFiles()
         if briefingDue() {
             startBriefing()
         } else if settings.greetOnLaunch, phase == .idle {
             await announce(greeting())
         }
+    }
+
+    /// Reads every data file now, so a file that can't be read is reported at launch, not at first use.
+    private func loadDataFiles() {
+        _ = MemoryStore.shared
+        _ = HistoryStore.shared
+        _ = RoutineStore.shared
+        _ = UsageStore.shared
     }
 
     // MARK: Morning briefing
@@ -105,6 +114,15 @@ final class Assistant: ObservableObject {
         ) { [weak self] _ in
             Task { @MainActor in self?.screenUnlocked() }
         }
+
+        // Say once when a data file couldn't be read (see StorageAlerts); the menu bar keeps the details.
+        StorageAlerts.shared.$alerts
+            .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
+            .sink { [weak self] _ in
+                guard let self, let line = StorageAlerts.shared.takeAnnouncement() else { return }
+                Task { await self.announce(line) }
+            }
+            .store(in: &cancellables)
 
         settings.$provider.dropFirst().sink { [weak self] _ in self?.agent.reset() }.store(in: &cancellables)
         settings.$wakeName.sink { [weak self] name in

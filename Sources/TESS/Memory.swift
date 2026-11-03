@@ -19,14 +19,12 @@ final class MemoryStore: ObservableObject {
     static let limit = 200
 
     @Published private(set) var items: [MemoryItem]
-    private let url: URL
-    private let canSave: Bool
+    private let file: GuardedFile
 
     private init() {
-        url = AppPaths.directory.appendingPathComponent("memory.json")
-        let loaded = StoredFile.load([MemoryItem].self, from: url)
-        items = loaded.value ?? []
-        canSave = loaded.canSave
+        file = GuardedFile("memory.json", label: "memories")
+        items = file.load([MemoryItem].self) ?? []
+        file.onResume = { [weak self] in self?.save() }
     }
 
     /// Adds a fact unless an identical one exists. Returns false for duplicates or empty text.
@@ -65,8 +63,8 @@ final class MemoryStore: ObservableObject {
     var texts: [String] { items.map(\.text) }
 
     private func save() {
-        guard canSave, let data = try? JSONEncoder().encode(items) else { return }
-        try? data.write(to: url, options: .atomic)
+        guard let data = try? JSONEncoder().encode(items) else { return }
+        file.write(data)
     }
 }
 

@@ -32,14 +32,22 @@ enum StoredFile {
         } catch {
             NSLog("TESS: couldn't read \(url.lastPathComponent): \(error)")
         }
+        if let backup = moveAside(url, fileManager: fileManager, now: now) {
+            return Loaded(value: nil, canSave: true, backup: backup)
+        }
+        return Loaded(value: nil, canSave: false, backup: nil)
+    }
+
+    /// Moves a file to its backup name. Returns the backup, or nil if it couldn't be moved.
+    static func moveAside(_ url: URL, fileManager: FileManager = .default, now: Date = Date()) -> URL? {
         let backup = backupURL(for: url, fileManager: fileManager, now: now)
         do {
             try fileManager.moveItem(at: url, to: backup)
             NSLog("TESS: kept the unreadable \(url.lastPathComponent) as \(backup.lastPathComponent)")
-            return Loaded(value: nil, canSave: true, backup: backup)
+            return backup
         } catch {
-            NSLog("TESS: couldn't move \(url.lastPathComponent) aside (\(error)); not saving it this session")
-            return Loaded(value: nil, canSave: false, backup: nil)
+            NSLog("TESS: couldn't move \(url.lastPathComponent) aside (\(error)); not saving it for now")
+            return nil
         }
     }
 

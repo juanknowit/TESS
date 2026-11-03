@@ -26,15 +26,13 @@ final class HistoryStore: ObservableObject {
 
     @Published private(set) var entries: [HistoryEntry]
     @Published var enabled: Bool { didSet { UserDefaults.standard.set(enabled, forKey: "historyEnabled") } }
-    private let url: URL
-    private let canSave: Bool
+    private let file: GuardedFile
 
     private init() {
-        url = AppPaths.directory.appendingPathComponent("history.json")
+        file = GuardedFile("history.json", label: "history")
         enabled = UserDefaults.standard.object(forKey: "historyEnabled") as? Bool ?? true
-        let loaded = StoredFile.load([HistoryEntry].self, from: url)
-        entries = loaded.value ?? []
-        canSave = loaded.canSave
+        entries = file.load([HistoryEntry].self) ?? []
+        file.onResume = { [weak self] in self?.save() }
     }
 
     func add(question: String, answer: String, provider: String, failed: Bool = false) {
@@ -63,7 +61,7 @@ final class HistoryStore: ObservableObject {
     }
 
     private func save() {
-        guard canSave, let data = try? JSONEncoder().encode(entries) else { return }
-        try? data.write(to: url, options: .atomic)
+        guard let data = try? JSONEncoder().encode(entries) else { return }
+        file.write(data)
     }
 }

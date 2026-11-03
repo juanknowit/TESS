@@ -3,9 +3,12 @@ import SwiftUI
 
 struct MenuBarIcon: View {
     @ObservedObject var assistant: Assistant
+    @ObservedObject private var storage = StorageAlerts.shared
 
     var body: some View {
-        Image(systemName: assistant.menuIcon)
+        // While idle, a data-file problem shows as a warning so it's noticed without opening the menu.
+        Image(systemName: assistant.phase == .idle && !storage.alerts.isEmpty
+              ? "exclamationmark.triangle" : assistant.menuIcon)
     }
 }
 
@@ -16,6 +19,7 @@ struct MenuBarView: View {
     @ObservedObject private var ui = UIState.shared
     @ObservedObject private var history = HistoryStore.shared
     @ObservedObject private var updater = Updater.shared
+    @ObservedObject private var storage = StorageAlerts.shared
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -46,6 +50,10 @@ struct MenuBarView: View {
                 .padding(10)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 8))
+            }
+
+            ForEach(storage.alerts) { alert in
+                StorageAlertRow(alert: alert)
             }
 
             if let release = updater.latest {
