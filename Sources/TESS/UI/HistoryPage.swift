@@ -16,6 +16,8 @@ struct HistoryPage: View {
                 .help(history.enabled ? "Keeping history" : "History is off")
         }
 
+        StorageNotice(file: "history.json")
+
         HStack(spacing: 10) {
             HStack(spacing: 6) {
                 Image(systemName: "magnifyingglass").foregroundStyle(Theme.secondary)

@@ -11,6 +11,8 @@ struct RoutinesPage: View {
                 .buttonStyle(ThemedButtonStyle(kind: .primary))
         }
 
+        StorageNotice(file: "protocols.json")
+
         if store.routines.isEmpty {
             Card {
                 VStack(spacing: 8) {

@@ -12,61 +12,6 @@ struct MenuBarIcon: View {
     }
 }
 
-/// A problem with one of TESS's data files: "kept a copy" (dismissable) or "not saving" (until fixed).
-struct StorageAlertRow: View {
-    let alert: StorageAlerts.Alert
-
-    private var appName: String { AppFlavor.current.appName }
-
-    private var title: String {
-        switch alert.kind {
-        case .keptCopy: return "Couldn’t read your saved \(alert.label)"
-        case .notSaving: return "Not saving your \(alert.label)"
-        }
-    }
-
-    private var detail: String {
-        switch alert.kind {
-        case .keptCopy(let backup):
-            return "\(appName) kept it as \(backup.lastPathComponent) and started fresh."
-        case .notSaving:
-            let text = "\(appName) can’t read \(alert.file.lastPathComponent) or move it aside, so she won’t save over it. Changes made now are lost when you quit."
-            return alert.retryFailed ? text + " Still couldn’t move it." : text
-        }
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(alignment: .top, spacing: 8) {
-                Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title).font(.callout.weight(.medium))
-                    Text(detail).font(.caption).foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-            HStack {
-                Spacer()
-                Button("Show in Finder") {
-                    if case .keptCopy(let backup) = alert.kind {
-                        NSWorkspace.shared.activateFileViewerSelecting([backup])
-                    } else {
-                        NSWorkspace.shared.activateFileViewerSelecting([alert.file])
-                    }
-                }
-                switch alert.kind {
-                case .keptCopy: Button("Dismiss") { StorageAlerts.shared.dismiss(alert.id) }
-                case .notSaving: Button("Try again") { StorageAlerts.shared.retry(alert.id) }
-                }
-            }
-            .controlSize(.small)
-        }
-        .padding(10)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
-    }
-}
-
 struct MenuBarView: View {
     @EnvironmentObject var assistant: Assistant
     @EnvironmentObject var settings: AppSettings

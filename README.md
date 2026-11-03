@@ -116,7 +116,7 @@ Click the menu bar icon › **Settings…**. The window has a searchable sidebar
 - **Updates** — current version, check for updates, automatic checks and beta versions.
 - **Permissions** and **About**.
 
-Usage statistics, memories, history and protocols are stored only on your Mac in `~/Library/Application Support/TESS`. If one of those files can't be read (for example after editing it by hand), TESS keeps it next to the original as `memory-unreadable-<date>.json` (and so on), starts that part fresh, and tells you, both out loud and in the menu bar.
+Usage statistics, memories, history and protocols are stored only on your Mac in `~/Library/Application Support/TESS`. If one of those files can't be read (for example after editing it by hand), TESS keeps it next to the original as `memory-unreadable-<date>.json` (and so on), starts that part fresh, and tells you out loud, in the menu bar and on that page in Settings.
 
 ## Voices
 

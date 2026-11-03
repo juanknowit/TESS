@@ -756,6 +756,8 @@ private struct MemoryPage: View {
             Toggle("", isOn: $settings.memoryEnabled).themedSwitch().controlSize(.regular)
         }
 
+        StorageNotice(file: "memory.json")
+
         TimelineView(.periodic(from: .now, by: 2)) { _ in
             HStack(spacing: 12) {
                 StatTile(icon: "bookmark.fill", tint: Theme.accent, value: "\(memory.items.count)",
@@ -907,6 +909,8 @@ private struct UsagePage: View {
         PageHeader("Usage", "What TESS has been up to. Token counts come straight from your AI provider's responses.") {
             RangeTabs(selection: $ui.usageRange)
         }
+
+        StorageNotice(file: "usage.json")
 
         HStack(alignment: .top, spacing: 12) {
             ProviderCard(name: "Claude", icon: "sparkle", tint: Theme.claude, total: total,
