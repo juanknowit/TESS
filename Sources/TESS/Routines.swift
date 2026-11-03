@@ -77,14 +77,13 @@ final class RoutineStore: ObservableObject {
 
     @Published var routines: [Routine] { didSet { save() } }
     private let url: URL
+    private let canSave: Bool
 
     private init() {
         url = AppPaths.directory.appendingPathComponent("protocols.json")
-        if let raw = try? Data(contentsOf: url), let decoded = try? JSONDecoder().decode([Routine].self, from: raw) {
-            routines = decoded
-        } else {
-            routines = Self.examples
-        }
+        let loaded = StoredFile.load([Routine].self, from: url)
+        canSave = loaded.canSave
+        routines = loaded.value ?? Self.examples
     }
 
     static let examples: [Routine] = [
@@ -126,7 +125,7 @@ final class RoutineStore: ObservableObject {
     }
 
     private func save() {
-        guard let data = try? JSONEncoder().encode(routines) else { return }
+        guard canSave, let data = try? JSONEncoder().encode(routines) else { return }
         try? data.write(to: url, options: .atomic)
     }
 }
