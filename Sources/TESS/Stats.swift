@@ -56,14 +56,13 @@ final class UsageStore: ObservableObject {
 
     private let url: URL
     private var saveScheduled = false
+    private let canSave: Bool
 
     private init() {
         url = AppPaths.directory.appendingPathComponent("usage.json")
-        if let raw = try? Data(contentsOf: url), let decoded = try? JSONDecoder().decode(UsageData.self, from: raw) {
-            data = decoded
-        } else {
-            data = UsageData()
-        }
+        let loaded = StoredFile.load(UsageData.self, from: url)
+        data = loaded.value ?? UsageData()
+        canSave = loaded.canSave
     }
 
     // MARK: Recording
@@ -142,7 +141,7 @@ final class UsageStore: ObservableObject {
     }
 
     private func scheduleSave() {
-        guard !saveScheduled else { return }
+        guard canSave, !saveScheduled else { return }
         saveScheduled = true
         Task { @MainActor [weak self] in
             try? await Task.sleep(nanoseconds: 1_000_000_000)

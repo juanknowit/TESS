@@ -20,14 +20,13 @@ final class MemoryStore: ObservableObject {
 
     @Published private(set) var items: [MemoryItem]
     private let url: URL
+    private let canSave: Bool
 
     private init() {
         url = AppPaths.directory.appendingPathComponent("memory.json")
-        if let raw = try? Data(contentsOf: url), let decoded = try? JSONDecoder().decode([MemoryItem].self, from: raw) {
-            items = decoded
-        } else {
-            items = []
-        }
+        let loaded = StoredFile.load([MemoryItem].self, from: url)
+        items = loaded.value ?? []
+        canSave = loaded.canSave
     }
 
     /// Adds a fact unless an identical one exists. Returns false for duplicates or empty text.
@@ -66,7 +65,7 @@ final class MemoryStore: ObservableObject {
     var texts: [String] { items.map(\.text) }
 
     private func save() {
-        guard let data = try? JSONEncoder().encode(items) else { return }
+        guard canSave, let data = try? JSONEncoder().encode(items) else { return }
         try? data.write(to: url, options: .atomic)
     }
 }
