@@ -6,6 +6,7 @@ All notable changes to TESS are listed here. The format follows [Keep a Changelo
 
 ### Fixed
 - Memories, history, protocols and usage stats can no longer be wiped by a file TESS can't read (a half-written file, a hand edit, or one from a newer release). TESS now keeps it next to the original as `memory-unreadable-<date>.json` (and so on) before starting fresh, and if it can't move it aside it won't save over it ([#14](https://github.com/juanknowit/TESS/issues/14))
+- TESS now tells you when this happens: she says it once, and the menu bar shows what happened with **Show in Finder**. If she couldn't move the file aside, the menu bar says that file isn't being saved and offers **Try again**, so it can't go unnoticed until the next launch
 - Permission setup no longer gets stuck on "Asking to control Spotify…" (or System Events): TESS waits until each app has really opened, brings its own window forward so macOS's question is visible, and moves on after 45 seconds, listing any apps macOS didn't ask about
 - Permission texts use the app's own name and wake word (TESS Dev says "Hey Dev")
 - Screen Recording: TESS makes sure it appears in System Settings › Screen & System Audio Recording after asking, and the page explains the + button if it still isn't listed
